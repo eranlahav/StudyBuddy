@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, BookOpen, Settings, ChevronRight, LogOut } from 'lucide-react';
+import { BookOpen, Settings, ChevronRight, LogOut } from 'lucide-react';
 import { useStore } from '../store';
 
 interface LayoutProps {
@@ -11,14 +11,15 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useStore();
+  const { parent, family, signOut } = useStore();
   const isParentView = location.pathname.startsWith('/parent');
   const isChildView = location.pathname.startsWith('/child');
   const isHome = location.pathname === '/';
   const isLogin = location.pathname === '/login';
+  const isSignup = location.pathname === '/signup';
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
     navigate('/');
   };
 
@@ -66,16 +67,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <BookOpen className="h-8 w-8 text-indigo-600" />
                 <span className="text-xl font-bold text-gray-900">לומדים בבית</span>
               </div>
-              {isParentView && user && (
+              {isParentView && parent && (
                 <div className="hidden sm:mr-6 sm:flex sm:space-x-8 sm:space-x-reverse">
                   <span className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    לוח בקרה להורים
+                    {family?.name || 'לוח בקרה להורים'}
                   </span>
                 </div>
               )}
             </div>
             <div className="flex items-center gap-3">
-              {!isHome && !isParentView && !isLogin && (
+              {!isHome && !isParentView && !isLogin && !isSignup && (
                 <button
                   onClick={() => navigate('/parent')}
                   className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2"
@@ -84,14 +85,27 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   אזור הורים
                 </button>
               )}
-              {user && isParentView && (
-                <button
-                  onClick={handleLogout}
-                  className="text-red-500 hover:bg-red-50 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
-                >
-                  <LogOut size={18} />
-                  <span className="hidden sm:inline">התנתק</span>
-                </button>
+              {parent && isParentView && (
+                <>
+                  {/* Parent Info */}
+                  <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
+                    {parent.photoURL ? (
+                      <img src={parent.photoURL} alt="" className="w-6 h-6 rounded-full" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                        {parent.displayName?.charAt(0) || '?'}
+                      </div>
+                    )}
+                    <span className="font-medium">{parent.displayName}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-red-500 hover:bg-red-50 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut size={18} />
+                    <span className="hidden sm:inline">התנתק</span>
+                  </button>
+                </>
               )}
             </div>
           </div>

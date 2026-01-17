@@ -3,23 +3,40 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { StoreProvider, useStore } from './store';
 import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Home } from './pages/Home';
 import { ParentDashboard } from './pages/ParentDashboard';
 import { ChildDashboard } from './pages/ChildDashboard';
 import { ChildDetails } from './pages/ChildDetails';
 import { QuizSession } from './pages/QuizSession';
 import { LoginPage } from './pages/LoginPage';
+import { SignupPage } from './pages/SignupPage';
+import { ParentSettings } from './pages/ParentSettings';
+import { AddChildPage } from './pages/ParentSettings/AddChildPage';
+import { EditChildPage } from './pages/ParentSettings/EditChildPage';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { InviteManager } from './pages/InviteManager';
+import { logger } from './lib/logger';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loadingAuth } = useStore();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiresSuperAdmin?: boolean;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiresSuperAdmin = false }) => {
+  const { parent, authLoading } = useStore();
   const location = useLocation();
 
-  if (loadingAuth) {
+  if (authLoading) {
     return <div className="p-8 text-center text-gray-500">מאמת נתונים...</div>;
   }
 
-  if (!user) {
+  if (!parent) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requiresSuperAdmin && !parent.isSuperAdmin) {
+    return <Navigate to="/parent" replace />;
   }
 
   return <>{children}</>;
@@ -43,7 +60,8 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
-          
+          <Route path="/signup" element={<SignupPage />} />
+
           {/* Protected Parent Routes */}
           <Route path="/parent" element={
             <ProtectedRoute>
@@ -55,7 +73,34 @@ const AppContent: React.FC = () => {
               <ChildDetails />
             </ProtectedRoute>
           } />
-          
+          <Route path="/parent/settings" element={
+            <ProtectedRoute>
+              <ParentSettings />
+            </ProtectedRoute>
+          } />
+          <Route path="/parent/settings/add-child" element={
+            <ProtectedRoute>
+              <AddChildPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/parent/settings/edit-child/:id" element={
+            <ProtectedRoute>
+              <EditChildPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Super Admin Routes */}
+          <Route path="/admin" element={
+            <ProtectedRoute requiresSuperAdmin>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/invites" element={
+            <ProtectedRoute requiresSuperAdmin>
+              <InviteManager />
+            </ProtectedRoute>
+          } />
+
           <Route path="/child" element={<ChildDashboard />} />
           <Route path="/session/:childId/:subjectId/:topic" element={<QuizSession />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -67,9 +112,20 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <StoreProvider>
-      <AppContent />
-    </StoreProvider>
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        logger.error('Uncaught error in React tree', {
+          componentStack: errorInfo.componentStack
+        }, error);
+      }}
+      onReset={() => {
+        logger.info('ErrorBoundary reset - attempting recovery');
+      }}
+    >
+      <StoreProvider>
+        <AppContent />
+      </StoreProvider>
+    </ErrorBoundary>
   );
 };
 

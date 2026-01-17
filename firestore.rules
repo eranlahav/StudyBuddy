@@ -1,0 +1,166 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ====== Helper Functions ======
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Get the current parent document
+    function getParent() {
+      return get(/databases/$(database)/documents/parents/$(request.auth.uid)).data;
+    }
+
+    // Check if user belongs to a specific family
+    function belongsToFamily(familyId) {
+      return isAuthenticated() && getParent().familyId == familyId;
+    }
+
+    // Check if user is a super admin
+    function isSuperAdmin() {
+      return isAuthenticated() && getParent().isSuperAdmin == true;
+    }
+
+    // ====== Collection Rules ======
+
+    // Parents - can read own doc, co-parents in same family, or super admin can read all
+    match /parents/{parentId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == parentId ||
+        resource.data.familyId == getParent().familyId ||
+        isSuperAdmin()
+      );
+      allow create: if isAuthenticated() && request.auth.uid == parentId;
+      allow update: if isAuthenticated() && (
+        request.auth.uid == parentId ||
+        isSuperAdmin()
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    // Families - members can read, creator or super admin can write
+    match /families/{familyId} {
+      allow read: if isAuthenticated() && (
+        belongsToFamily(familyId) ||
+        isSuperAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        belongsToFamily(familyId) ||
+        isSuperAdmin()
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    // Children - family-scoped access
+    match /children/{childId} {
+      allow read: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        belongsToFamily(request.resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+    }
+
+    // Sessions - family-scoped access
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        belongsToFamily(request.resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+    }
+
+    // Upcoming Tests - family-scoped access
+    match /upcomingTests/{testId} {
+      allow read: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        belongsToFamily(request.resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+    }
+
+    // Evaluations - family-scoped access for uploaded test documents
+    match /evaluations/{evaluationId} {
+      allow read: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        belongsToFamily(request.resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+    }
+
+    // Subjects - public read (needed before login), super admin write only
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Invites - anyone can read (for validation), parents can create for own family
+    match /invites/{inviteId} {
+      allow read: if true;  // Allow unauthenticated read for invite validation
+
+      // Parent can create invite for their own family, or super admin can create any
+      allow create: if isAuthenticated() && (
+        request.resource.data.familyId == getParent().familyId ||
+        isSuperAdmin()
+      );
+
+      allow update: if isAuthenticated();  // Allow marking as accepted
+      allow delete: if isSuperAdmin() || (
+        isAuthenticated() &&
+        resource.data.familyId == getParent().familyId
+      );
+    }
+
+    // Parents - allow reading other parents in same family
+    // Note: This is an update to the existing parents rules to allow
+    // reading co-parents in the same family
+    // [The main parents rule above handles this with the existing logic]
+  }
+}

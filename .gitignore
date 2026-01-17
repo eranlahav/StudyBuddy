@@ -34,3 +34,15 @@ yarn-error.log*
 
 # Zip archives
 *.zip
+
+# Coverage reports
+coverage/
+
+# Playwright MCP screenshots
+.playwright-mcp/
+
+# Firebase debug logs
+firebase-debug.log
+
+# Production env (contains secrets)
+.env.production

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <!-- Book cover -->
+  <path d="M8 12 C8 8, 12 6, 32 6 C52 6, 56 8, 56 12 L56 52 C56 56, 52 58, 32 58 C12 58, 8 56, 8 52 Z" fill="url(#bookGradient)"/>
+  <!-- Book spine shadow -->
+  <path d="M32 6 L32 58" stroke="#4f46e5" stroke-width="2"/>
+  <!-- Pages -->
+  <path d="M12 14 C12 11, 20 10, 30 10 L30 52 C20 52, 12 51, 12 48 Z" fill="#fef3c7"/>
+  <path d="M34 10 C44 10, 52 11, 52 14 L52 48 C52 51, 44 52, 34 52 Z" fill="#fef3c7"/>
+  <!-- Page lines left -->
+  <line x1="15" y1="18" x2="27" y2="18" stroke="#d4a574" stroke-width="1"/>
+  <line x1="15" y1="24" x2="27" y2="24" stroke="#d4a574" stroke-width="1"/>
+  <line x1="15" y1="30" x2="27" y2="30" stroke="#d4a574" stroke-width="1"/>
+  <line x1="15" y1="36" x2="27" y2="36" stroke="#d4a574" stroke-width="1"/>
+  <!-- Page lines right -->
+  <line x1="37" y1="18" x2="49" y2="18" stroke="#d4a574" stroke-width="1"/>
+  <line x1="37" y1="24" x2="49" y2="24" stroke="#d4a574" stroke-width="1"/>
+  <line x1="37" y1="30" x2="49" y2="30" stroke="#d4a574" stroke-width="1"/>
+  <line x1="37" y1="36" x2="49" y2="36" stroke="#d4a574" stroke-width="1"/>
+  <!-- Star decoration -->
+  <polygon points="32,42 34,47 39,47 35,50 37,55 32,52 27,55 29,50 25,47 30,47" fill="#fbbf24"/>
+</svg>

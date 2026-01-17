@@ -2,13 +2,23 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, ShieldCheck, Star } from 'lucide-react';
 import { Button } from '../components/Button';
+import { useStore } from '../store';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { parent, family } = useStore();
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center animate-fade-in">
       <div className="mb-10">
+        {/* Welcome message for logged-in users */}
+        {parent && family && (
+          <div className="bg-indigo-50 text-indigo-800 px-4 py-2 rounded-full inline-flex items-center gap-2 mb-6 border border-indigo-200">
+            <span className="text-lg">👋</span>
+            <span className="font-medium">שלום, {family.name}!</span>
+          </div>
+        )}
+
         <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl mb-4">
           <span className="block xl:inline">ללמוד בכיף</span>{' '}
           <span className="block text-indigo-600 xl:inline">עם כל המשפחה</span>
@@ -43,13 +53,13 @@ export const Home: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">להורים</h2>
           <p className="text-gray-600 mb-6 text-sm">ניהול פרופילים, מקצועות, דוחות התקדמות והגדרות.</p>
-          <Button 
-            variant="secondary" 
-            size="lg" 
+          <Button
+            variant="secondary"
+            size="lg"
             className="w-full"
             onClick={(e) => { e.stopPropagation(); navigate('/parent'); }}
           >
-            לוח בקרה
+            {parent ? 'לוח בקרה' : 'התחברות'}
           </Button>
         </div>
       </div>

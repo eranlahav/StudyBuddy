@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Trophy, ArrowRight, Activity, Calendar, BookOpen, Plus, Trash2, X } from 'lucide-react';
+import { Trophy, ArrowRight, Activity, Calendar, BookOpen, Plus, Trash2, X, Settings, Shield } from 'lucide-react';
 import { Button } from '../components/Button';
 
 export const ParentDashboard: React.FC = () => {
-  const { children, sessions, upcomingTests, subjects, addSubject, removeSubject } = useStore();
+  const { children, sessions, upcomingTests, subjects, addSubject, removeSubject, parent } = useStore();
   const navigate = useNavigate();
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState('');
@@ -61,9 +61,19 @@ export const ParentDashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">לוח בקרה להורים</h1>
           <p className="text-gray-500 mt-2">לחצו על פרופיל ילד לצפייה בפרטים מלאים, תוכנית לימודים וניתוח ביצועים.</p>
         </div>
-        <Button onClick={() => setShowSubjectModal(true)} variant="secondary">
-           <BookOpen size={18} className="ml-2" /> ניהול מקצועות
-        </Button>
+        <div className="flex gap-3">
+          {parent?.isSuperAdmin && (
+            <Button onClick={() => navigate('/admin')} variant="secondary">
+              <Shield size={18} className="ml-2" /> ניהול מערכת
+            </Button>
+          )}
+          <Button onClick={() => navigate('/parent/settings')} variant="secondary">
+            <Settings size={18} className="ml-2" /> הגדרות משפחה
+          </Button>
+          <Button onClick={() => setShowSubjectModal(true)} variant="secondary">
+            <BookOpen size={18} className="ml-2" /> ניהול מקצועות
+          </Button>
+        </div>
       </div>
 
       {/* Children Overview Cards */}

@@ -1,11 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useStore } from '../store';
 import { useNavigate } from 'react-router-dom';
 import { ChildProfile, Subject } from '../types';
-import { ChevronLeft, Calendar, CheckCircle, Clock, Circle, Gamepad2, BookOpen, Pencil, X, Smile, Trophy, Sparkles, Lightbulb, Zap, ArrowRight, Coffee, Book } from 'lucide-react';
+import { ChevronLeft, Calendar, CheckCircle, Clock, Circle, Gamepad2, BookOpen, Pencil, X, Smile, Trophy, Sparkles, Lightbulb, Zap, ArrowRight, Coffee, Book, LogIn } from 'lucide-react';
 import { Button } from '../components/Button';
 import { HebrewGame } from '../games/HebrewGame';
+import { PINPad } from '../components/PINPad';
+import { verifyPin, hasPinSet, isLockedOut } from '../services';
+import { getUserMessage } from '../lib';
 
 const AVATAR_OPTIONS = [
   '🦁', '🐯', '🐻', '🐶', '🐱', '🐼', '🐨', '🐸', 
@@ -16,11 +19,63 @@ const AVATAR_OPTIONS = [
 ];
 
 export const ChildDashboard: React.FC = () => {
-  const { children, subjects, upcomingTests, sessions, updateChild } = useStore();
+  const { children, subjects, upcomingTests, sessions, updateChild, parent } = useStore();
   const navigate = useNavigate();
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [viewMode, setViewMode] = useState<'practice' | 'games'>('practice');
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [pinError, setPinError] = useState('');
+
+  // Check lockout status when child is selected
+  const lockoutStatus = selectedChild ? isLockedOut(selectedChild.id) : { locked: false, secondsRemaining: 0 };
+
+  // Handle PIN verification
+  const handlePinSubmit = useCallback(async (pin: string) => {
+    if (!selectedChild) return;
+
+    try {
+      const isValid = await verifyPin(selectedChild.id, pin, selectedChild.pinHash);
+      if (isValid) {
+        setIsAuthenticated(true);
+        setPinError('');
+        // Store in session
+        sessionStorage.setItem('authenticated_child', selectedChild.id);
+      }
+    } catch (error) {
+      setPinError(getUserMessage(error));
+    }
+  }, [selectedChild]);
+
+  // Reset when going back to selection
+  const handleBackToSelection = () => {
+    setSelectedChild(null);
+    setIsAuthenticated(false);
+    setPinError('');
+    setViewMode('practice');
+    sessionStorage.removeItem('authenticated_child');
+  };
+
+  // Check if parent is logged in (required for child access)
+  if (!parent) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="bg-white rounded-3xl p-8 shadow-lg border border-slate-200 max-w-md text-center">
+          <div className="bg-indigo-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LogIn className="text-indigo-600 w-10 h-10" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800 mb-2">נדרשת התחברות הורה</h1>
+          <p className="text-slate-500 mb-6">
+            כדי להיכנס לאזור הילדים, צריך קודם שההורים יתחברו למערכת.
+          </p>
+          <Button onClick={() => navigate('/login')} size="lg">
+            <LogIn className="ml-2" size={20} />
+            כניסת הורים
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Phase 1: Select Profile
   if (!selectedChild) {
@@ -42,6 +97,33 @@ export const ChildDashboard: React.FC = () => {
               </div>
             </button>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Phase 1.5: PIN Authentication (if child has PIN set)
+  if (selectedChild && hasPinSet(selectedChild.pinHash) && !isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="bg-white rounded-3xl p-8 shadow-lg border border-slate-200 w-full max-w-sm">
+          <PINPad
+            onSubmit={handlePinSubmit}
+            error={pinError}
+            isLocked={lockoutStatus.locked}
+            lockoutSeconds={lockoutStatus.secondsRemaining}
+            childName={selectedChild.name}
+          />
+
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <button
+              onClick={handleBackToSelection}
+              className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center justify-center gap-2 mx-auto"
+            >
+              <ArrowRight size={16} />
+              חזרה לבחירת פרופיל
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -113,8 +195,8 @@ export const ChildDashboard: React.FC = () => {
       {/* Child Header */}
       <div className="flex flex-col md:flex-row items-center gap-4 mb-8 bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
         <div className="flex items-center gap-4 w-full md:w-auto">
-            <button 
-            onClick={() => { setSelectedChild(null); setViewMode('practice'); }}
+            <button
+            onClick={handleBackToSelection}
             className="bg-slate-100 p-2 rounded-full shadow-sm text-slate-400 hover:text-indigo-600 transition-colors"
             >
             <svg className="w-6 h-6 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,12 +242,12 @@ export const ChildDashboard: React.FC = () => {
                 <BookOpen size={24} />
                 תרגול למבחן
             </button>
-            {selectedChild.gameSettings && (
+            {selectedChild.showGames && selectedChild.gameSettings && (
             <button
                 onClick={() => setViewMode('games')}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all text-lg ${
-                    viewMode === 'games' 
-                    ? 'bg-purple-100 text-purple-700 shadow-sm' 
+                    viewMode === 'games'
+                    ? 'bg-purple-100 text-purple-700 shadow-sm'
                     : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                 }`}
             >
@@ -392,8 +474,8 @@ export const ChildDashboard: React.FC = () => {
         </>
       )}
 
-      {/* GAMES VIEW & AVATAR MODAL UNCHANGED */}
-      {viewMode === 'games' && selectedChild.gameSettings && (
+      {/* GAMES VIEW */}
+      {viewMode === 'games' && selectedChild.showGames && selectedChild.gameSettings && (
         <div className="animate-fade-in pb-12">
             <HebrewGame settings={selectedChild.gameSettings} />
         </div>
@@ -447,7 +529,18 @@ export const ChildDashboard: React.FC = () => {
 };
 
 // Reusable Topic Button Component to reduce duplication
-const TopicButton = ({ topic, status, childId, subjectId, navigate, highlight }: any) => {
+type TopicStatus = 'new' | 'needs_work' | 'mastered';
+
+interface TopicButtonProps {
+  topic: string;
+  status: TopicStatus;
+  childId: string;
+  subjectId: string;
+  navigate: (path: string) => void;
+  highlight?: boolean;
+}
+
+const TopicButton: React.FC<TopicButtonProps> = ({ topic, status, childId, subjectId, navigate, highlight }) => {
     return (
         <button
         onClick={() => navigate(`/session/${childId}/${subjectId}/${encodeURIComponent(topic)}`)}
