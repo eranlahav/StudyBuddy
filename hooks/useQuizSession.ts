@@ -49,7 +49,7 @@ export interface UseQuizSessionOptions {
   topic: string;
   upcomingTests: UpcomingTest[];
   isFinalReview: boolean;
-  /** Callback when session is saved */
+  /** Callback when session is saved (can be async) */
   onSessionSave?: (session: {
     score: number;
     totalQuestions: number;
@@ -57,7 +57,7 @@ export interface UseQuizSessionOptions {
     userAnswers: number[];
     recommendations?: string[];
     readinessScore?: number;
-  }) => void;
+  }) => void | Promise<void>;
   /** Callback to add a remediation test (familyId added by store) */
   onAddRemediationTest?: (test: Omit<UpcomingTest, 'id' | 'familyId'> & { id: string }) => Promise<void>;
 }
@@ -238,12 +238,16 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
 
     if (!isFinalReview) {
       // For regular quizzes, just call the save callback
-      onSessionSave?.({
-        score,
-        totalQuestions: questions.length,
-        questions,
-        userAnswers
-      });
+      try {
+        await onSessionSave?.({
+          score,
+          totalQuestions: questions.length,
+          questions,
+          userAnswers
+        });
+      } catch (e) {
+        logger.error('useQuizSession: Failed to save session', { childId: child.id }, e);
+      }
       return;
     }
 
@@ -306,14 +310,18 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
 
     // Save session
     const readiness = Math.round((score / questions.length) * 100);
-    onSessionSave?.({
-      score,
-      totalQuestions: questions.length,
-      questions,
-      userAnswers,
-      recommendations: finalRecs.length > 0 ? finalRecs : undefined,
-      readinessScore: readiness
-    });
+    try {
+      await onSessionSave?.({
+        score,
+        totalQuestions: questions.length,
+        questions,
+        userAnswers,
+        recommendations: finalRecs.length > 0 ? finalRecs : undefined,
+        readinessScore: readiness
+      });
+    } catch (e) {
+      logger.error('useQuizSession: Failed to save final review session', { childId: child.id }, e);
+    }
   }, [
     isFinalReview,
     score,

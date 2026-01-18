@@ -40,22 +40,36 @@ export const QuizSession: React.FC = () => {
     topic: decodedTopic,
     upcomingTests,
     isFinalReview,
-    onSessionSave: (sessionData) => {
+    onSessionSave: async (sessionData) => {
       if (child && subject) {
-        addSession({
-          id: Date.now().toString(),
-          childId: child.id,
-          subjectId: subject.id,
-          topic: decodedTopic,
-          date: Date.now(),
-          score: sessionData.score,
-          totalQuestions: sessionData.totalQuestions,
-          questions: sessionData.questions,
-          userAnswers: sessionData.userAnswers,
-          isFinalReview,
-          readinessScore: sessionData.readinessScore,
-          recommendations: sessionData.recommendations
-        });
+        try {
+          // Build session object, only including optional fields if they have values
+          // Firestore doesn't accept undefined values
+          const session: Parameters<typeof addSession>[0] = {
+            id: Date.now().toString(),
+            childId: child.id,
+            subjectId: subject.id,
+            topic: decodedTopic,
+            date: Date.now(),
+            score: sessionData.score,
+            totalQuestions: sessionData.totalQuestions,
+            questions: sessionData.questions,
+            userAnswers: sessionData.userAnswers,
+            isFinalReview
+          };
+
+          // Only add optional fields if they have actual values
+          if (sessionData.readinessScore !== undefined) {
+            session.readinessScore = sessionData.readinessScore;
+          }
+          if (sessionData.recommendations !== undefined) {
+            session.recommendations = sessionData.recommendations;
+          }
+
+          await addSession(session);
+        } catch (error) {
+          console.error('Failed to save session:', error);
+        }
       }
     },
     onAddRemediationTest: addUpcomingTest
@@ -311,8 +325,13 @@ const QuestionContent: React.FC<QuestionContentProps> = ({ question, isMath, isE
         >
           <div className="absolute top-0 right-10 bottom-0 w-0.5 bg-red-300 opacity-60 h-full z-0"></div>
           <div className="relative z-10 w-full text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 leading-tight" dir="auto">
-              {question.questionText}
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 leading-tight" dir="rtl">
+              {question.questionText.split(/(\d[\d\s\.\,\+\-\×\÷\*\/\=x]+\d)/g).map((part, i) =>
+                // If part contains math expression (numbers with operators), render LTR
+                /^\d[\d\s\.\,\+\-\×\÷\*\/\=x]+\d$/.test(part)
+                  ? <span key={i} dir="ltr" style={{ unicodeBidi: 'isolate' }}>{part}</span>
+                  : part
+              )}
             </h2>
           </div>
         </div>
