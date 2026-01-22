@@ -11,28 +11,28 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 ## Current Position
 
 Phase: 2 of 5 (Profile-Aware Quiz Generation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-22 - Completed 02-01-PLAN.md (Adaptive Quiz Service Foundation)
+Last activity: 2026-01-22 - Completed 02-02-PLAN.md (Fatigue Detection and Frustration Circuit Breaker)
 
-Progress: [████████░░░░░░░░░░░░] 33% (Phase 2: 1/3 plans)
+Progress: [████████████░░░░░░░░] 67% (Phase 2: 2/3 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 2.4 minutes
-- Total execution time: 0.2 hours
+- Total plans completed: 6
+- Average duration: 2.7 minutes
+- Total execution time: 0.27 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 - Profile Foundation | 4 | 10 min | 2.5 min |
-| 02 - Profile-Aware Quiz | 1 | 2 min | 2 min |
+| 02 - Profile-Aware Quiz | 2 | 6 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2 min), 01-03 (2 min), 01-04 (4 min), 02-01 (2 min)
+- Last 5 plans: 01-03 (2 min), 01-04 (4 min), 02-01 (2 min), 02-02 (4 min)
 - Trend: Consistent velocity
 
 *Updated after each plan completion*
@@ -77,6 +77,11 @@ Key decisions affecting current work:
 - Difficulty ratio: 20/50/30 (review/target/weak) — Research-based ratio from Phase 2 context
 - Frustrated ratio: 20/70/10 when frustrated — Reduce weak topics to 10% when frustration detected
 
+**New from 02-02:**
+- Fatigue detection requires BOTH rushing AND accuracy drop — Prevents false positives for fast learners
+- Frustration tracking is per-topic, not global — Child can continue with other topics
+- Silent topic switching — Child never sees "you are struggling" message
+
 ### Pending Todos
 
 None yet.
@@ -98,7 +103,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 02-01-PLAN.md, ready for 02-02
+Stopped at: Completed 02-02-PLAN.md, ready for 02-03
 Resume file: None
 
 ---
