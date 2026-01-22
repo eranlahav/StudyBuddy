@@ -379,3 +379,49 @@ export interface QuestionRequest {
   masteryPercentage: number;  // 0-100, from BKT pKnown * 100
   targetDifficulty: DifficultyLevel;
 }
+
+/**
+ * State for fatigue detection during quiz session
+ * Tracks answer speed and recent accuracy to detect cognitive fatigue
+ */
+export interface FatigueState {
+  /** Baseline average answer time from first 5 questions (seconds) */
+  averageAnswerTime: number;
+  /** Rolling window of last 3 answer times (seconds) */
+  recentAnswerTimes: number[];
+  /** Rolling window of last 5 answer correctness */
+  recentAccuracy: boolean[];
+  /** Whether fatigue has been detected */
+  fatigueDetected: boolean;
+}
+
+/**
+ * State for frustration circuit breaker during quiz
+ * Tracks consecutive errors per topic to prevent frustration spirals
+ */
+export interface FrustrationState {
+  /** Consecutive error count by topic */
+  consecutiveErrorsByTopic: Record<string, number>;
+  /** Topics currently blocked due to frustration threshold */
+  blockedTopics: Set<string>;
+  /** Last topic answered (for silent switching) */
+  lastTopic: string;
+  /** Questions answered since last block (for cooldown) */
+  questionsSinceBlock: number;
+}
+
+/**
+ * Constants for adaptive quiz behavior
+ */
+export const ADAPTIVE_QUIZ_CONSTANTS = {
+  /** Minimum questions before fatigue detection activates */
+  FATIGUE_MIN_QUESTIONS: 5,
+  /** Speed threshold: recent avg < baseline * this = rushing */
+  FATIGUE_SPEED_THRESHOLD: 0.5,
+  /** Accuracy threshold: recent < this = struggling */
+  FATIGUE_ACCURACY_THRESHOLD: 0.4,
+  /** Consecutive errors on same topic to trigger circuit breaker */
+  FRUSTRATION_THRESHOLD: 3,
+  /** Questions to wait before unblocking topics */
+  COOLDOWN_QUESTIONS: 3
+} as const;
