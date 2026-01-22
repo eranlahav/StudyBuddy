@@ -11,27 +11,27 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 ## Current Position
 
 Phase: 1 of 5 (Profile Foundation)
-Plan: 2 of TBD in current phase
+Plan: 3 of TBD in current phase
 Status: In progress
-Last activity: 2026-01-22 — Completed 01-02-PLAN.md (Profile & Signal Services)
+Last activity: 2026-01-22 — Completed 01-03-PLAN.md (Profile Integration)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 2 minutes
-- Total execution time: 0.07 hours
+- Total execution time: 0.18 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 - Profile Foundation | 2 | 4 min | 2 min |
+| 01 - Profile Foundation | 3 | 6 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (2 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min)
 - Trend: Consistent velocity
 
 *Updated after each plan completion*
@@ -60,15 +60,16 @@ Key decisions affecting current work:
 - Lazy profile initialization (null until first quiz) — Avoids unnecessary writes for inactive children
 - Chronological replay for bootstrapProfile — Order-sensitive BKT requires correct session sequencing
 
+**New from 01-03:**
+- useLearnerProfile hook accepts full ChildProfile object (not just childId) — Enables access to familyId and grade for bootstrap
+- Auto-bootstrap one-time attempt per child tracked via ref — Prevents infinite loops if bootstrap fails
+- Hook helper functions (getTopicsByMastery, getConfidenceLevel) — UI-ready profile data filtering and quality indicators
+
 ### Pending Todos
 
 None yet.
 
 ### Blockers/Concerns
-
-**Phase 01-03 Readiness:**
-- Profile services ready for integration in quiz session components
-- Fire-and-forget pattern means profile updates can silently fail - monitoring recommended
 
 **Phase 2 Readiness:**
 - BKT parameters (pKnown, pLearn, pGuess, pSlip) need calibration with real usage data after implementation
@@ -85,7 +86,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 01-02-PLAN.md execution (3 tasks, 3 commits)
+Stopped at: Completed 01-03-PLAN.md execution (3 tasks, 3 commits)
 Resume file: None
 
 ---
