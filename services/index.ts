@@ -165,3 +165,12 @@ export {
   processQuizSignal,
   bootstrapProfile
 } from './signalService';
+
+// Adaptive Quiz (Phase 2)
+export {
+  classifyTopics,
+  mixDifficulty,
+  orderTopics,
+  getOrderedTopics,
+  hasProfileData
+} from './adaptiveQuizService';
