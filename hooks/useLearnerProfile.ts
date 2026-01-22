@@ -102,8 +102,8 @@ export function useLearnerProfile(
 
           // Fire-and-forget bootstrap - subscription will pick up the new profile
           // Pass all 4 required params: childId, familyId, sessions, grade
-          bootstrapProfile(child.id, child.familyId, sessions, child.grade).catch(err => {
-            // Error already logged in profileService - just swallow here
+          bootstrapProfile(child.id, child.familyId, sessions, child.grade).catch(() => {
+            // Error already logged in profileService - swallow here
             // Bootstrap failure is non-critical, profile will be built on next quiz
             logger.warn('useLearnerProfile: Auto-bootstrap failed (non-critical)', { childId });
           });

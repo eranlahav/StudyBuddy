@@ -421,8 +421,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Fire-and-forget: Update learner profile with quiz signal
       // This runs in background and doesn't block the UI
-      processQuizSignal(session, child).catch(err => {
-        // Error already logged in signalService - just swallow here
+      processQuizSignal(session, child).catch(() => {
+        // Error already logged in signalService - swallow here
         // Profile update failure should never break quiz flow
       });
     }
