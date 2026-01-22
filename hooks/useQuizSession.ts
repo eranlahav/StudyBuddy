@@ -14,9 +14,22 @@ import {
   DifficultyLevel,
   FatigueState,
   FrustrationState,
-  ADAPTIVE_QUIZ_CONSTANTS
+  ADAPTIVE_QUIZ_CONSTANTS,
+  LearnerProfile,
+  QuestionRequest
 } from '../types';
-import { generateQuizQuestions, generateExamRecommendations, analyzeMistakesAndGenerateTopics } from '../services/geminiService';
+import {
+  generateQuizQuestions,
+  generateExamRecommendations,
+  analyzeMistakesAndGenerateTopics,
+  generateProfileAwareQuestions
+} from '../services/geminiService';
+import {
+  classifyTopics,
+  mixDifficulty,
+  orderTopics,
+  hasProfileData
+} from '../services/adaptiveQuizService';
 import { generateDictationQuestions } from '../services/dictationService';
 import { getUserMessage, logger, getEncouragementMessage } from '../lib';
 
@@ -64,6 +77,8 @@ export interface UseQuizSessionOptions {
   topic: string;
   upcomingTests: UpcomingTest[];
   isFinalReview: boolean;
+  /** Learner profile for adaptive quiz (optional - falls back to static) */
+  profile?: LearnerProfile | null;
   /** Callback when session is saved (can be async) */
   onSessionSave?: (session: {
     score: number;
@@ -125,6 +140,7 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     topic,
     upcomingTests,
     isFinalReview,
+    profile,
     onSessionSave,
     onAddRemediationTest
   } = options;
@@ -184,7 +200,7 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     );
   }, [child.id, subject.id, topic, upcomingTests, isFinalReview]);
 
-  // Load questions
+  // Load questions - adaptive if profile available, static otherwise
   const loadQuestions = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -194,7 +210,7 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
       ? relevantTest.topics
       : [topic];
 
-    // Handle Dictation (local generation)
+    // Handle Dictation (local generation) - unchanged
     if (relevantTest?.type === 'dictation' && relevantTest.dictationWords) {
       const generated = generateDictationQuestions(
         relevantTest.dictationWords,
@@ -208,37 +224,117 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
       return;
     }
 
-    // AI Generation
+    // Determine question count
     const count = isFinalReview ? 10 : (relevantTest?.numQuestions || 5);
-    const difficulty: DifficultyLevel = child.proficiency?.[subject.id] || 'medium';
-    const topicPrompt = isFinalReview ? targetTopics.join(', ') : topic;
+    const fallbackDifficulty: DifficultyLevel = child.proficiency?.[subject.id] || 'medium';
 
     try {
-      const data = await generateQuizQuestions(
-        subject.name,
-        topicPrompt,
-        child.grade,
-        count,
-        difficulty
-      );
+      let data: QuizQuestion[];
+
+      // Check if we should use adaptive generation
+      const useAdaptive = hasProfileData(profile) && !isFinalReview;
+
+      if (useAdaptive && profile) {
+        // Adaptive generation with profile data
+        logger.info('useQuizSession: Using adaptive question generation', {
+          childId: child.id,
+          topicCount: Object.keys(profile.topicMastery).length
+        });
+
+        // Get available topics (from subject or just the session topic)
+        const availableTopics = subject.topics?.length > 0 ? subject.topics : targetTopics;
+
+        // Classify topics by mastery level
+        const classification = classifyTopics(profile, availableTopics);
+        logger.info('useQuizSession: Topic classification', {
+          weak: classification.weak.length,
+          learning: classification.learning.length,
+          mastered: classification.mastered.length
+        });
+
+        // Apply difficulty mixing (20/50/30 ratio)
+        const mix = mixDifficulty(classification, count, true);
+        logger.info('useQuizSession: Difficulty mix', {
+          review: mix.reviewTopics.length,
+          target: mix.targetTopics.length,
+          weak: mix.weakTopics.length,
+          total: mix.questionCount
+        });
+
+        // Order topics (easy to hard)
+        const orderedTopics = orderTopics(mix);
+
+        // Build question requests with mastery data
+        const requests: QuestionRequest[] = orderedTopics.map(topicName => {
+          const mastery = profile.topicMastery[topicName];
+          const pKnown = mastery?.pKnown ?? 0.5;
+          const masteryPercentage = Math.round(pKnown * 100);
+
+          // Determine target difficulty based on topic category
+          let targetDifficulty: DifficultyLevel;
+          if (mix.weakTopics.includes(topicName)) {
+            // Weak topics get easy questions (scaffolding)
+            targetDifficulty = 'easy';
+          } else if (mix.reviewTopics.includes(topicName)) {
+            // Mastered topics get easy questions (review)
+            targetDifficulty = 'easy';
+          } else {
+            // Learning topics get medium difficulty
+            targetDifficulty = 'medium';
+          }
+
+          return { topic: topicName, masteryPercentage, targetDifficulty };
+        });
+
+        // Generate profile-aware questions
+        data = await generateProfileAwareQuestions(subject.name, requests, child.grade);
+
+        logger.info('useQuizSession: Adaptive questions loaded', {
+          childId: child.id,
+          count: data.length,
+          topics: data.map(q => q.topic)
+        });
+      } else {
+        // Fallback: Static generation (existing behavior)
+        logger.info('useQuizSession: Using static question generation', {
+          childId: child.id,
+          reason: !profile ? 'no profile' : 'final review mode'
+        });
+
+        const topicPrompt = isFinalReview ? targetTopics.join(', ') : topic;
+        data = await generateQuizQuestions(
+          subject.name,
+          topicPrompt,
+          child.grade,
+          count,
+          fallbackDifficulty
+        );
+
+        // Add topic to questions for tracking (using session topic)
+        data = data.map(q => ({
+          ...q,
+          topic: q.topic || topic
+        }));
+
+        logger.info('useQuizSession: Static questions loaded', {
+          childId: child.id,
+          count: data.length
+        });
+      }
+
       setQuestions(data);
-      logger.info('useQuizSession: Questions loaded', {
-        childId: child.id,
-        subject: subject.name,
-        topic: topicPrompt,
-        count: data.length
-      });
     } catch (err) {
       const message = getUserMessage(err);
       setError(message);
       logger.error('useQuizSession: Failed to load questions', {
         childId: child.id,
-        subject: subject.name
+        subject: subject.name,
+        adaptive: hasProfileData(profile)
       }, err);
     } finally {
       setIsLoading(false);
     }
-  }, [child, subject, topic, isFinalReview, findRelevantTest]);
+  }, [child, subject, topic, isFinalReview, findRelevantTest, profile]);
 
   /**
    * Detect fatigue based on speed AND accuracy drop
