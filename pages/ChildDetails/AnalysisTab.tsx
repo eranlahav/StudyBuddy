@@ -9,12 +9,18 @@ import React, { useState, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { Trophy, TrendingUp, AlertCircle } from 'lucide-react';
+import { Brain, CheckCircle, BookOpen, AlertTriangle, Clock, TrendingUp as TrendIcon, Info, Trophy, TrendingUp, AlertCircle } from 'lucide-react';
 import { AnalysisTabProps, AnalysisData, TopicPerformance } from './types';
+import { LearnerProfile, TopicMastery, getMasteryLevel, MasteryLevel } from '../../types';
+import { formatRelativeDay } from '../../lib';
+import { getConfidenceMessage } from '../../hooks';
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   subjects,
-  sessions
+  sessions,
+  profile,
+  profileLoading,
+  profileConfidence
 }) => {
   const [analysisFilter, setAnalysisFilter] = useState<string>('all');
 
@@ -100,6 +106,15 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           </button>
         ))}
       </div>
+
+      {/* NEW: Topic Mastery Section - Full width */}
+      <TopicMasterySection
+        profile={profile}
+        profileLoading={profileLoading}
+        profileConfidence={profileConfidence}
+        subjects={subjects}
+        selectedSubject={analysisFilter}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Progress Chart */}
@@ -242,5 +257,257 @@ const WeaknessesCard = React.memo<WeaknessesCardProps>(({ topics, hasData }) => 
   </div>
 ));
 WeaknessesCard.displayName = 'WeaknessesCard';
+
+// --- Topic Mastery Section ---
+
+interface TopicMasteryCardProps {
+  mastery: TopicMastery;
+  subjectName: string;
+}
+
+const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectName }) => {
+  const level = getMasteryLevel(mastery.pKnown);
+  const percentage = Math.round(mastery.pKnown * 100);
+
+  const levelConfig = {
+    mastered: {
+      bg: 'bg-green-50',
+      border: 'border-green-200',
+      text: 'text-green-700',
+      icon: CheckCircle,
+      label: 'נשלט'
+    },
+    learning: {
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+      text: 'text-blue-700',
+      icon: BookOpen,
+      label: 'בלמידה'
+    },
+    weak: {
+      bg: 'bg-orange-50',
+      border: 'border-orange-200',
+      text: 'text-orange-700',
+      icon: AlertTriangle,
+      label: 'לחיזוק'
+    }
+  };
+
+  const config = levelConfig[level];
+  const Icon = config.icon;
+
+  const trendIcon = {
+    improving: { icon: TrendIcon, color: 'text-green-500', rotate: '' },
+    stable: { icon: TrendIcon, color: 'text-gray-400', rotate: 'rotate-90' },
+    declining: { icon: TrendIcon, color: 'text-red-500', rotate: 'rotate-180' }
+  };
+
+  const trend = trendIcon[mastery.recentTrend];
+
+  return (
+    <div className={`p-4 rounded-xl border ${config.bg} ${config.border}`}>
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center gap-2">
+          <Icon size={18} className={config.text} />
+          <span className={`text-xs font-medium ${config.text}`}>{config.label}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <trend.icon size={14} className={`${trend.color} ${trend.rotate}`} />
+        </div>
+      </div>
+
+      <h4 className="font-bold text-gray-900 mb-1">{mastery.topic}</h4>
+      <p className="text-xs text-gray-500 mb-3">{subjectName}</p>
+
+      {/* Mastery bar */}
+      <div className="mb-3">
+        <div className="flex justify-between text-xs mb-1">
+          <span className="text-gray-600">שליטה</span>
+          <span className={`font-bold ${config.text}`}>{percentage}%</span>
+        </div>
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              level === 'mastered' ? 'bg-green-500' :
+              level === 'learning' ? 'bg-blue-500' : 'bg-orange-500'
+            }`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="flex justify-between text-xs text-gray-500">
+        <span className="flex items-center gap-1">
+          <BookOpen size={12} />
+          {mastery.attempts} שאלות
+        </span>
+        <span className="flex items-center gap-1">
+          <Clock size={12} />
+          {formatRelativeDay(mastery.lastAttempt)}
+        </span>
+      </div>
+    </div>
+  );
+});
+TopicMasteryCard.displayName = 'TopicMasteryCard';
+
+interface TopicMasterySectionProps {
+  profile: LearnerProfile | null;
+  profileLoading: boolean;
+  profileConfidence: 'low' | 'medium' | 'high';
+  subjects: { id: string; name: string }[];
+  selectedSubject: string;
+}
+
+const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
+  profile,
+  profileLoading,
+  profileConfidence,
+  subjects,
+  selectedSubject
+}) => {
+  if (profileLoading) {
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Brain size={20} className="text-purple-600" /> שליטה בנושאים
+        </h3>
+        <div className="flex items-center justify-center h-32 text-gray-400">
+          <div className="animate-pulse">טוען פרופיל...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile || Object.keys(profile.topicMastery).length === 0) {
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Brain size={20} className="text-purple-600" /> שליטה בנושאים
+        </h3>
+        <div className="text-center py-8 text-gray-500">
+          <Brain size={48} className="mx-auto mb-3 text-gray-300" />
+          <p>עדיין אין נתונים על שליטה בנושאים.</p>
+          <p className="text-sm mt-1">הנתונים יופיעו אחרי התרגול הראשון.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Filter topics by selected subject
+  const allTopics = Object.values(profile.topicMastery);
+  const filteredTopics = selectedSubject === 'all'
+    ? allTopics
+    : allTopics.filter(t => t.subjectId === selectedSubject);
+
+  // Group by mastery level
+  const mastered = filteredTopics.filter(t => getMasteryLevel(t.pKnown) === 'mastered');
+  const learning = filteredTopics.filter(t => getMasteryLevel(t.pKnown) === 'learning');
+  const weak = filteredTopics.filter(t => getMasteryLevel(t.pKnown) === 'weak');
+
+  // Sort each group by pKnown (highest first for mastered, lowest first for weak)
+  mastered.sort((a, b) => b.pKnown - a.pKnown);
+  learning.sort((a, b) => b.pKnown - a.pKnown);
+  weak.sort((a, b) => a.pKnown - b.pKnown);
+
+  const getSubjectName = (subjectId: string) =>
+    subjects.find(s => s.id === subjectId)?.name || subjectId;
+
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <Brain size={20} className="text-purple-600" /> שליטה בנושאים
+        </h3>
+        {/* Confidence indicator */}
+        <div className="flex items-center gap-1 text-xs text-gray-500">
+          <Info size={14} />
+          <span>{getConfidenceMessage(profileConfidence)}</span>
+        </div>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="text-center p-3 bg-green-50 rounded-lg">
+          <div className="text-2xl font-bold text-green-700">{mastered.length}</div>
+          <div className="text-xs text-green-600">נשלט</div>
+        </div>
+        <div className="text-center p-3 bg-blue-50 rounded-lg">
+          <div className="text-2xl font-bold text-blue-700">{learning.length}</div>
+          <div className="text-xs text-blue-600">בלמידה</div>
+        </div>
+        <div className="text-center p-3 bg-orange-50 rounded-lg">
+          <div className="text-2xl font-bold text-orange-700">{weak.length}</div>
+          <div className="text-xs text-orange-600">לחיזוק</div>
+        </div>
+      </div>
+
+      {/* Topic cards */}
+      {filteredTopics.length > 0 ? (
+        <div className="space-y-4">
+          {/* Weak topics first (priority for improvement) */}
+          {weak.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-orange-700 mb-2 flex items-center gap-1">
+                <AlertTriangle size={14} /> נושאים לחיזוק
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {weak.map(topic => (
+                  <TopicMasteryCard
+                    key={`${topic.subjectId}-${topic.topic}`}
+                    mastery={topic}
+                    subjectName={getSubjectName(topic.subjectId)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Learning topics */}
+          {learning.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-blue-700 mb-2 flex items-center gap-1">
+                <BookOpen size={14} /> בתהליך למידה
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {learning.map(topic => (
+                  <TopicMasteryCard
+                    key={`${topic.subjectId}-${topic.topic}`}
+                    mastery={topic}
+                    subjectName={getSubjectName(topic.subjectId)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Mastered topics */}
+          {mastered.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-1">
+                <CheckCircle size={14} /> נושאים נשלטים
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {mastered.map(topic => (
+                  <TopicMasteryCard
+                    key={`${topic.subjectId}-${topic.topic}`}
+                    mastery={topic}
+                    subjectName={getSubjectName(topic.subjectId)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center py-4 text-gray-500">
+          אין נושאים במקצוע זה עדיין.
+        </div>
+      )}
+    </div>
+  );
+});
+TopicMasterySection.displayName = 'TopicMasterySection';
 
 export default AnalysisTab;
