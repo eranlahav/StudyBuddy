@@ -344,3 +344,38 @@ export function getMasteryLevel(pKnown: number): MasteryLevel {
   if (pKnown >= 0.5) return 'learning';
   return 'weak';
 }
+
+// ==========================================
+// ADAPTIVE QUIZ TYPES (Phase 2)
+// ==========================================
+
+/**
+ * Classification of topics by mastery level
+ * Used by adaptive quiz service for difficulty mixing
+ */
+export interface TopicClassification {
+  weak: string[];       // pKnown < 0.5
+  learning: string[];   // pKnown 0.5-0.8
+  mastered: string[];   // pKnown >= 0.8
+}
+
+/**
+ * Result of difficulty mixing algorithm
+ * Determines which topics to include in quiz
+ */
+export interface DifficultyMix {
+  reviewTopics: string[];    // 20% - mastered topics (spaced retrieval)
+  targetTopics: string[];    // 50% - current level (learning zone)
+  weakTopics: string[];      // 30% - struggling topics (capped if frustration)
+  questionCount: number;     // Final count (may be less if topics exhausted)
+}
+
+/**
+ * Request for generating a single profile-aware question
+ * Passed to Gemini for targeted difficulty generation
+ */
+export interface QuestionRequest {
+  topic: string;
+  masteryPercentage: number;  // 0-100, from BKT pKnown * 100
+  targetDifficulty: DifficultyLevel;
+}
