@@ -42,7 +42,9 @@ import {
   subscribeToEvaluations,
   addEvaluation as addEvaluationService,
   updateEvaluation as updateEvaluationService,
-  deleteEvaluation as deleteEvaluationService
+  deleteEvaluation as deleteEvaluationService,
+  // Profile & Learning Signals
+  processQuizSignal
 } from './services';
 
 interface StoreContextType extends AppState {
@@ -416,6 +418,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (child) {
       const pointsEarned = session.score * 10;
       await awardPoints(child.id, child.stars, child.streak, pointsEarned);
+
+      // Fire-and-forget: Update learner profile with quiz signal
+      // This runs in background and doesn't block the UI
+      processQuizSignal(session, child).catch(err => {
+        // Error already logged in signalService - just swallow here
+        // Profile update failure should never break quiz flow
+      });
     }
   }, [family, state.children]);
 
