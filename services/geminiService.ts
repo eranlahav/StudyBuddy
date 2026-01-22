@@ -17,7 +17,8 @@ import {
   EvaluationType,
   ExtractedSkill,
   ExtractedQuestion,
-  proficiencyToDifficulty
+  proficiencyToDifficulty,
+  QuestionRequest
 } from "../types";
 import { logger, retry, QuizGenerationError, TopicExtractionError, EvaluationAnalysisError, hasApiKey } from "../lib";
 
@@ -150,6 +151,156 @@ export async function generateQuizQuestions(
     logger.error('generateQuizQuestions: Failed after retries', { subject, topic }, error);
     throw new QuizGenerationError(
       `Failed to generate quiz questions: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { cause: error instanceof Error ? error : undefined }
+    );
+  });
+}
+
+/**
+ * Generate profile-aware quiz questions using Gemini AI
+ *
+ * Enhanced version that accepts per-question mastery data and target difficulty.
+ * Used by adaptive quiz flow to generate questions tailored to learner profile.
+ *
+ * @param subject - Subject name in Hebrew
+ * @param requests - Array of QuestionRequest with topic, mastery, and difficulty
+ * @param grade - Child's grade level
+ *
+ * @throws {QuizGenerationError} If question generation fails after retries
+ *
+ * @example
+ * const questions = await generateProfileAwareQuestions('מתמטיקה', [
+ *   { topic: 'שברים', masteryPercentage: 85, targetDifficulty: 'easy' },
+ *   { topic: 'כפל', masteryPercentage: 30, targetDifficulty: 'easy' }
+ * ], GradeLevel.Grade4);
+ */
+export async function generateProfileAwareQuestions(
+  subject: string,
+  requests: QuestionRequest[],
+  grade: GradeLevel
+): Promise<QuizQuestion[]> {
+  if (!hasApiKey()) {
+    logger.error('generateProfileAwareQuestions: API key not configured');
+    throw new QuizGenerationError('API key not configured');
+  }
+
+  if (requests.length === 0) {
+    logger.warn('generateProfileAwareQuestions: No requests provided');
+    return [];
+  }
+
+  const totalQuestions = requests.length;
+
+  // Build per-question context with mastery data
+  const topicContext = requests
+    .map((req, idx) => {
+      const masteryDesc = req.masteryPercentage < 40 ? 'struggling'
+        : req.masteryPercentage < 70 ? 'learning'
+        : 'proficient';
+
+      return `Question ${idx + 1}: Topic "${req.topic}", Student Mastery: ${req.masteryPercentage}% (${masteryDesc}), Target Difficulty: ${req.targetDifficulty.toUpperCase()}`;
+    })
+    .join('\n');
+
+  const prompt = `Generate ${totalQuestions} multiple-choice questions in Hebrew (עברית) for a student in ${grade}.
+Subject: ${subject}
+
+ADAPTIVE DIFFICULTY INSTRUCTIONS:
+${topicContext}
+
+For each question:
+1. Use the specified topic and target difficulty
+2. Consider student's mastery level when crafting the question:
+   - Low mastery (0-40%): Use multiple choice with clear options, simple language, scaffolding
+   - Medium mastery (40-70%): Standard curriculum level, moderate complexity
+   - High mastery (70-100%): Include critical thinking, multi-step problems
+
+3. Difficulty calibration:
+   - EASY: Basic recall, definitions, straightforward calculations
+   - MEDIUM: Application, combining concepts, standard curriculum
+   - HARD: Analysis, synthesis, multi-step reasoning
+
+IMPORTANT FOR MATH (${subject}):
+- Format questionText as clear equation (e.g., "25 + 15 = ?")
+- Use standard symbols (+, -, x, /, =)
+- Minimize wordy narratives unless word problems
+
+Make the questions age-appropriate for ${grade}.
+Ensure exactly one correct answer per question.
+Provide short encouraging explanation in Hebrew.
+Provide helpful hint (tip) without revealing answer.
+
+Important: The output JSON must be valid. All text in Hebrew.
+CRITICAL: Each question MUST include the "topic" field matching the requested topic.`;
+
+  logger.info('generateProfileAwareQuestions: Starting generation', {
+    subject,
+    grade,
+    questionCount: totalQuestions,
+    topics: requests.map(r => r.topic)
+  });
+
+  return retry(async () => {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              questionText: { type: Type.STRING, description: "The question prompt in Hebrew" },
+              options: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "Array of 4 possible answers in Hebrew"
+              },
+              correctAnswerIndex: { type: Type.INTEGER, description: "Index (0-3) of the correct answer" },
+              explanation: { type: Type.STRING, description: "Short explanation in Hebrew" },
+              tip: { type: Type.STRING, description: "Helpful hint without revealing answer" },
+              difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
+              topic: { type: Type.STRING, description: "The topic this question covers" }
+            },
+            required: ["questionText", "options", "correctAnswerIndex", "explanation", "difficulty", "topic"]
+          }
+        }
+      }
+    });
+
+    if (!response.text) {
+      throw new QuizGenerationError('Empty response from Gemini API');
+    }
+
+    const questions = JSON.parse(response.text) as QuizQuestion[];
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new QuizGenerationError('Invalid response format: expected non-empty array');
+    }
+
+    // Validate that topics are included (fallback to request topic if missing)
+    const validatedQuestions = questions.map((q, idx) => ({
+      ...q,
+      topic: q.topic || requests[idx]?.topic || subject
+    }));
+
+    logger.info('generateProfileAwareQuestions: Successfully generated questions', {
+      count: validatedQuestions.length,
+      topics: validatedQuestions.map(q => q.topic)
+    });
+
+    return validatedQuestions;
+  }, {
+    ...AI_RETRY_OPTIONS,
+    context: 'generateProfileAwareQuestions'
+  }).catch((error) => {
+    if (error instanceof QuizGenerationError) {
+      throw error;
+    }
+    logger.error('generateProfileAwareQuestions: Failed after retries', { subject }, error);
+    throw new QuizGenerationError(
+      `Failed to generate profile-aware questions: ${error instanceof Error ? error.message : 'Unknown error'}`,
       { cause: error instanceof Error ? error : undefined }
     );
   });
