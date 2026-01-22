@@ -263,3 +263,84 @@ export interface Evaluation {
   aiConfidence?: number;           // 0-100
   parentEdited: boolean;           // True if parent made corrections
 }
+
+// ==========================================
+// LEARNER PROFILE TYPES
+// ==========================================
+
+/**
+ * BKT (Bayesian Knowledge Tracing) parameters
+ * Controls how mastery probability updates based on responses
+ */
+export interface BKTParams {
+  pInit: number;   // Initial mastery probability (0.1-0.3)
+  pLearn: number;  // Learning rate per question (0.15-0.3)
+  pGuess: number;  // Probability of correct guess (0.2-0.25)
+  pSlip: number;   // Probability of slip/mistake (0.05-0.15)
+}
+
+/**
+ * Mastery tracking for a single topic
+ */
+export interface TopicMastery {
+  // Identification
+  topic: string;
+  subjectId: string;
+
+  // BKT state
+  pKnown: number;              // 0-1, current mastery probability
+  attempts: number;            // Total questions answered
+
+  // Performance aggregates
+  correctCount: number;
+  incorrectCount: number;
+  averageTime: number;         // Seconds per question (Phase 4+)
+
+  // Trend detection
+  recentTrend: 'improving' | 'stable' | 'declining';
+  performanceWindow: number[]; // Last 10 attempts (1=correct, 0=incorrect)
+
+  // Timestamps
+  firstAttempt: number;
+  lastAttempt: number;
+
+  // Extensible (Phase 4+)
+  speed?: number;              // Optional: questions/minute
+  consistency?: number;        // Optional: 1 - variance
+  questionTypeBreakdown?: Record<string, number>;  // Optional
+}
+
+/**
+ * Complete learner profile for a child
+ * Stored at /children/{childId}/learnerProfile/main
+ */
+export interface LearnerProfile {
+  // Identity
+  childId: string;
+  familyId: string;
+
+  // Topic-level tracking (map for O(1) lookups)
+  topicMastery: Record<string, TopicMastery>;
+
+  // Global metadata
+  totalQuizzes: number;
+  totalQuestions: number;
+  lastUpdated: number;
+
+  // Version for schema migrations
+  version: number;  // Start at 1
+}
+
+/**
+ * Mastery level categories for UI display
+ */
+export type MasteryLevel = 'mastered' | 'learning' | 'weak';
+
+/**
+ * Get mastery level from pKnown probability
+ */
+export function getMasteryLevel(pKnown: number): MasteryLevel {
+  if (pKnown >= 0.8) return 'mastered';
+  if (pKnown >= 0.5) return 'learning';
+  return 'weak';
+}
