@@ -152,3 +152,16 @@ export {
   getChildStats
 } from './statsService';
 export type { FamilyStats, ChildStats } from './statsService';
+
+// Profile & Learning Signals
+export {
+  getProfile,
+  updateProfile,
+  subscribeToProfile,
+  initializeProfile
+} from './profileService';
+
+export {
+  processQuizSignal,
+  bootstrapProfile
+} from './signalService';
