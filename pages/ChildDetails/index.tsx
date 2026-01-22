@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { TabType } from './types';
 import { TabSkeleton } from '../../components/LoadingSkeleton';
+import { useLearnerProfile } from '../../hooks';
 
 // Lazy-loaded tab components for code-splitting
 const AnalysisTab = lazy(() => import('./AnalysisTab').then(m => ({ default: m.AnalysisTab })));
@@ -50,14 +51,22 @@ export const ChildDetails: React.FC = () => {
 
   const child = children.find(c => c.id === id);
 
-  if (!child) {
-    return <div className="p-8">Child not found</div>;
-  }
-
   // Filter sessions for this child (sorted newest first)
   const childSessions = sessions
     .filter(s => s.childId === id)
     .sort((a, b) => b.date - a.date);
+
+  // Get learner profile with auto-bootstrap for existing children
+  // Pass full child object (not just id) so hook can access familyId and grade for bootstrap
+  const {
+    profile,
+    isLoading: profileLoading,
+    getConfidenceLevel
+  } = useLearnerProfile(child, childSessions);
+
+  if (!child) {
+    return <div className="p-8">Child not found</div>;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -78,6 +87,9 @@ export const ChildDetails: React.FC = () => {
             child={child}
             subjects={subjects}
             sessions={childSessions}
+            profile={profile}
+            profileLoading={profileLoading}
+            profileConfidence={getConfidenceLevel()}
           />
         )}
 
