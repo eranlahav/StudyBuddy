@@ -25,3 +25,10 @@ export type {
 // Confetti/celebrations
 export { useConfetti, getScoreEmoji, getScoreMessage } from './useConfetti';
 export type { UseConfettiOptions, UseConfettiReturn } from './useConfetti';
+
+// Learner profile
+export { useLearnerProfile, getConfidenceMessage } from './useLearnerProfile';
+export type {
+  UseLearnerProfileOptions,
+  UseLearnerProfileReturn
+} from './useLearnerProfile';
