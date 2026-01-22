@@ -56,10 +56,12 @@ Plans:
 4. BKT parameters differ by grade level (grades 1-3 vs 4-6 vs 7-8)
 5. Quiz stops early if child rushes through last 5 questions (fatigue detection)
 
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] TBD during planning
+- [ ] 02-01-PLAN.md — Core types and adaptive quiz service (difficulty mixing, topic classification)
+- [ ] 02-02-PLAN.md — Fatigue and frustration tracking in useQuizSession hook
+- [ ] 02-03-PLAN.md — Profile-aware Gemini generation and integration
 
 ### Phase 3: Recommendation Engine
 **Goal**: AI suggests prioritized next topics with transparent reasoning and full parent override control
@@ -130,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Profile Foundation | 4/4 | ✓ Complete | 2026-01-22 |
-| 2. Profile-Aware Quiz Generation | 0/TBD | Not started | - |
+| 2. Profile-Aware Quiz Generation | 0/3 | Planned | - |
 | 3. Recommendation Engine | 0/TBD | Not started | - |
 | 4. Multi-Signal Integration | 0/TBD | Not started | - |
 | 5. Profile Maintenance & Visualization | 0/TBD | Not started | - |
