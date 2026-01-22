@@ -13,7 +13,7 @@ Transform Study Buddy from a quiz generator into an adaptive learning system tha
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Profile Foundation** - Data collection schema and BKT algorithm implementation
-- [ ] **Phase 2: Profile-Aware Quiz Generation** - Personalize questions based on learner profiles
+- [x] **Phase 2: Profile-Aware Quiz Generation** - Personalize questions based on learner profiles
 - [ ] **Phase 3: Recommendation Engine** - AI-powered topic suggestions with parent control
 - [ ] **Phase 4: Multi-Signal Integration** - School tests and engagement tracking
 - [ ] **Phase 5: Profile Maintenance & Visualization** - Forgetting curves, regression detection, analytics UI
@@ -59,9 +59,9 @@ Plans:
 **Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 02-01-PLAN.md — Core types and adaptive quiz service (difficulty mixing, topic classification)
-- [ ] 02-02-PLAN.md — Fatigue and frustration tracking in useQuizSession hook
-- [ ] 02-03-PLAN.md — Profile-aware Gemini generation and integration
+- [x] 02-01-PLAN.md — Core types and adaptive quiz service (difficulty mixing, topic classification)
+- [x] 02-02-PLAN.md — Fatigue and frustration tracking in useQuizSession hook
+- [x] 02-03-PLAN.md — Profile-aware Gemini generation and integration
 
 ### Phase 3: Recommendation Engine
 **Goal**: AI suggests prioritized next topics with transparent reasoning and full parent override control
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Profile Foundation | 4/4 | ✓ Complete | 2026-01-22 |
-| 2. Profile-Aware Quiz Generation | 0/3 | Planned | - |
+| 2. Profile-Aware Quiz Generation | 3/3 | ✓ Complete | 2026-01-22 |
 | 3. Recommendation Engine | 0/TBD | Not started | - |
 | 4. Multi-Signal Integration | 0/TBD | Not started | - |
 | 5. Profile Maintenance & Visualization | 0/TBD | Not started | - |
