@@ -73,6 +73,19 @@ service cloud.firestore {
         belongsToFamily(resource.data.familyId) ||
         isSuperAdmin()
       );
+
+      // Learner Profile subcollection - same family-scoped access as parent child doc
+      match /learnerProfile/{profileId} {
+        allow read: if isAuthenticated() && (
+          belongsToFamily(get(/databases/$(database)/documents/children/$(childId)).data.familyId) ||
+          isSuperAdmin()
+        );
+        allow create, update: if isAuthenticated() && (
+          belongsToFamily(get(/databases/$(database)/documents/children/$(childId)).data.familyId) ||
+          isSuperAdmin()
+        );
+        allow delete: if isSuperAdmin();
+      }
     }
 
     // Sessions - family-scoped access
