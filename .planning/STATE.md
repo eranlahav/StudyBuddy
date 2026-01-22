@@ -6,33 +6,33 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 
 **Core value:** Every child gets a personalized learning path that adapts to their actual needs - focusing on weaknesses, predicting mastery, and evolving with every interaction.
 
-**Current focus:** Phase 2 - Profile-Aware Quiz Generation
+**Current focus:** Phase 2 Complete - Ready for Phase 3
 
 ## Current Position
 
-Phase: 2 of 5 (Profile-Aware Quiz Generation)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-22 - Completed 02-02-PLAN.md (Fatigue Detection and Frustration Circuit Breaker)
+Phase: 2 of 5 (Profile-Aware Quiz Generation) - COMPLETE
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-22 - Completed 02-03-PLAN.md (Profile-Aware Quiz Generation)
 
-Progress: [████████████░░░░░░░░] 67% (Phase 2: 2/3 plans)
+Progress: [██████████████░░░░░░] 70% (Phase 2: 3/3 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 2.7 minutes
-- Total execution time: 0.27 hours
+- Total plans completed: 7
+- Average duration: 2.9 minutes
+- Total execution time: 0.34 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 - Profile Foundation | 4 | 10 min | 2.5 min |
-| 02 - Profile-Aware Quiz | 2 | 6 min | 3 min |
+| 02 - Profile-Aware Quiz | 3 | 10 min | 3.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (2 min), 01-04 (4 min), 02-01 (2 min), 02-02 (4 min)
+- Last 5 plans: 01-04 (4 min), 02-01 (2 min), 02-02 (4 min), 02-03 (4 min)
 - Trend: Consistent velocity
 
 *Updated after each plan completion*
@@ -82,13 +82,18 @@ Key decisions affecting current work:
 - Frustration tracking is per-topic, not global — Child can continue with other topics
 - Silent topic switching — Child never sees "you are struggling" message
 
+**New from 02-03:**
+- hasProfileData check (3+ topics) for adaptive enablement — Ensures sufficient data for meaningful mixing
+- Final review mode uses static generation — Even topic coverage more appropriate than adaptive mixing
+- Weak/review topics get easy difficulty, learning gets medium — Scaffolding and review vs zone of proximal development
+
 ### Pending Todos
 
 None yet.
 
 ### Blockers/Concerns
 
-**Phase 2 Readiness:**
+**Phase 2 Complete:**
 - BKT parameters (pKnown, pLearn, pGuess, pSlip) need calibration with real usage data after implementation
 - Gemini API cost monitoring required (batch API calls, implement caching)
 
@@ -103,7 +108,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 02-02-PLAN.md, ready for 02-03
+Stopped at: Completed 02-03-PLAN.md, Phase 2 complete
 Resume file: None
 
 ---
