@@ -59,3 +59,12 @@ export {
   calculateTrend,
   BKT_DEFAULTS
 } from './learnerModel';
+
+// Encouragement messages
+export {
+  FATIGUE_MESSAGES,
+  FRUSTRATION_MESSAGES,
+  EARLY_END_EXPLANATIONS,
+  getEncouragementMessage,
+  getParentExplanation
+} from './encouragement';
