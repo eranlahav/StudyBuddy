@@ -6,32 +6,33 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 
 **Core value:** Every child gets a personalized learning path that adapts to their actual needs - focusing on weaknesses, predicting mastery, and evolving with every interaction.
 
-**Current focus:** Phase 1 Complete - Ready for Phase 2
+**Current focus:** Phase 2 - Profile-Aware Quiz Generation
 
 ## Current Position
 
-Phase: 1 of 5 (Profile Foundation) — COMPLETE
-Plan: 4 of 4 in current phase
-Status: Phase complete, verified
-Last activity: 2026-01-22 — Completed Phase 1 verification (6/6 must-haves)
+Phase: 2 of 5 (Profile-Aware Quiz Generation)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-22 - Completed 02-01-PLAN.md (Adaptive Quiz Service Foundation)
 
-Progress: [██████████] 100% (Phase 1)
+Progress: [████████░░░░░░░░░░░░] 33% (Phase 2: 1/3 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 2.5 minutes
-- Total execution time: 0.17 hours
+- Total plans completed: 5
+- Average duration: 2.4 minutes
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 - Profile Foundation | 4 | 10 min | 2.5 min |
+| 02 - Profile-Aware Quiz | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 4 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min), 01-04 (4 min)
+- Last 5 plans: 01-02 (2 min), 01-03 (2 min), 01-04 (4 min), 02-01 (2 min)
 - Trend: Consistent velocity
 
 *Updated after each plan completion*
@@ -71,6 +72,11 @@ Key decisions affecting current work:
 - Summary stats grid with mastered/learning/weak counts — Quick overview before detailed cards
 - Subject filter affects topic display — Consistent with existing AnalysisTab filtering
 
+**New from 02-01:**
+- Topic classification thresholds: 0.5 weak, 0.8 mastered — Matches Phase 1 BKT thresholds
+- Difficulty ratio: 20/50/30 (review/target/weak) — Research-based ratio from Phase 2 context
+- Frustrated ratio: 20/70/10 when frustrated — Reduce weak topics to 10% when frustration detected
+
 ### Pending Todos
 
 None yet.
@@ -92,7 +98,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Phase 1 complete, ready for BTP deployment and user testing
+Stopped at: Completed 02-01-PLAN.md, ready for 02-02
 Resume file: None
 
 ---
