@@ -117,6 +117,7 @@ export interface QuizQuestion {
   tip?: string; // Hint for the question
   difficulty: DifficultyLevel;
   audioText?: string; // Optional: Text to be spoken via TTS when question loads (for Dictation)
+  topic?: string; // Optional: Topic this question belongs to (for adaptive tracking)
 }
 
 export interface StudySession {

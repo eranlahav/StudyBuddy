@@ -6,10 +6,19 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { QuizQuestion, ChildProfile, Subject, UpcomingTest, DifficultyLevel } from '../types';
+import {
+  QuizQuestion,
+  ChildProfile,
+  Subject,
+  UpcomingTest,
+  DifficultyLevel,
+  FatigueState,
+  FrustrationState,
+  ADAPTIVE_QUIZ_CONSTANTS
+} from '../types';
 import { generateQuizQuestions, generateExamRecommendations, analyzeMistakesAndGenerateTopics } from '../services/geminiService';
 import { generateDictationQuestions } from '../services/dictationService';
-import { getUserMessage, logger } from '../lib';
+import { getUserMessage, logger, getEncouragementMessage } from '../lib';
 
 export interface QuizSessionState {
   /** Current questions */
@@ -32,6 +41,12 @@ export interface QuizSessionState {
   isAnswered: boolean;
   /** Whether to show hint for current question */
   showTip: boolean;
+  /** Message shown when quiz ends early due to fatigue */
+  fatigueEndMessage: string | null;
+  /** Message shown when quiz ends early due to frustration */
+  frustrationEndMessage: string | null;
+  /** End reason for analytics */
+  earlyEndReason: 'fatigue' | 'frustration' | null;
 }
 
 export interface FinalReviewState {
@@ -77,6 +92,10 @@ export interface UseQuizSessionReturn extends QuizSessionState, FinalReviewState
   toggleTip: () => void;
   /** Finish the session and generate recommendations */
   finishSession: () => Promise<void>;
+  /** Fatigue tracking state (for analytics) */
+  fatigueState: FatigueState;
+  /** Frustration tracking state (for analytics) */
+  frustrationState: FrustrationState;
 }
 
 /**
@@ -126,6 +145,30 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [isGeneratingRecs, setIsGeneratingRecs] = useState(false);
   const [createdRemediation, setCreatedRemediation] = useState(false);
+
+  // Adaptive quiz state
+  const [fatigueEndMessage, setFatigueEndMessage] = useState<string | null>(null);
+  const [frustrationEndMessage, setFrustrationEndMessage] = useState<string | null>(null);
+  const [earlyEndReason, setEarlyEndReason] = useState<'fatigue' | 'frustration' | null>(null);
+
+  // Fatigue tracking
+  const [fatigueState, setFatigueState] = useState<FatigueState>({
+    averageAnswerTime: 0,
+    recentAnswerTimes: [],
+    recentAccuracy: [],
+    fatigueDetected: false
+  });
+
+  // Frustration tracking
+  const [frustrationState, setFrustrationState] = useState<FrustrationState>({
+    consecutiveErrorsByTopic: {},
+    blockedTopics: new Set(),
+    lastTopic: '',
+    questionsSinceBlock: 0
+  });
+
+  // Answer timing
+  const [answerStartTime, setAnswerStartTime] = useState<number>(Date.now());
 
   // Find relevant test for this session
   const findRelevantTest = useCallback(() => {
@@ -197,9 +240,164 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     }
   }, [child, subject, topic, isFinalReview, findRelevantTest]);
 
-  // Handle answer selection
+  /**
+   * Detect fatigue based on speed AND accuracy drop
+   * Both conditions must be true to avoid false positives (smart fast kids)
+   */
+  const detectFatigue = useCallback((state: FatigueState): boolean => {
+    const { FATIGUE_SPEED_THRESHOLD, FATIGUE_ACCURACY_THRESHOLD } = ADAPTIVE_QUIZ_CONSTANTS;
+
+    // Need minimum data
+    if (state.recentAnswerTimes.length < 3) return false;
+    if (state.recentAccuracy.length < 5) return false;
+
+    // Check if rushing (answering < 50% of baseline time)
+    const recentAvg = state.recentAnswerTimes.reduce((a, b) => a + b, 0) / state.recentAnswerTimes.length;
+    const isRushing = state.averageAnswerTime > 0 && recentAvg < state.averageAnswerTime * FATIGUE_SPEED_THRESHOLD;
+
+    // Check accuracy drop (< 40% correct in last 5)
+    const correctCount = state.recentAccuracy.filter(Boolean).length;
+    const recentAccuracyRate = correctCount / state.recentAccuracy.length;
+    const hasAccuracyDrop = recentAccuracyRate < FATIGUE_ACCURACY_THRESHOLD;
+
+    // Fatigue = both rushing AND poor accuracy
+    return isRushing && hasAccuracyDrop;
+  }, []);
+
+  /**
+   * Update fatigue state after each answer
+   */
+  const updateFatigueState = useCallback((
+    currentState: FatigueState,
+    answerTime: number,
+    isCorrect: boolean,
+    questionIndex: number
+  ): FatigueState => {
+    const { FATIGUE_MIN_QUESTIONS } = ADAPTIVE_QUIZ_CONSTANTS;
+
+    // First 5 questions establish baseline
+    if (questionIndex < FATIGUE_MIN_QUESTIONS) {
+      const newAvg = (currentState.averageAnswerTime * questionIndex + answerTime) / (questionIndex + 1);
+      return {
+        ...currentState,
+        averageAnswerTime: newAvg,
+        recentAnswerTimes: [],
+        recentAccuracy: [],
+        fatigueDetected: false
+      };
+    }
+
+    // After 5 questions, start monitoring
+    const newRecentTimes = [...currentState.recentAnswerTimes, answerTime];
+    if (newRecentTimes.length > 3) newRecentTimes.shift();
+
+    const newRecentAccuracy = [...currentState.recentAccuracy, isCorrect];
+    if (newRecentAccuracy.length > 5) newRecentAccuracy.shift();
+
+    const updatedState: FatigueState = {
+      ...currentState,
+      recentAnswerTimes: newRecentTimes,
+      recentAccuracy: newRecentAccuracy,
+      fatigueDetected: false
+    };
+
+    return {
+      ...updatedState,
+      fatigueDetected: detectFatigue(updatedState)
+    };
+  }, [detectFatigue]);
+
+  /**
+   * Update frustration state after each answer
+   */
+  const updateFrustrationState = useCallback((
+    currentState: FrustrationState,
+    questionTopic: string,
+    isCorrect: boolean
+  ): FrustrationState => {
+    const { FRUSTRATION_THRESHOLD } = ADAPTIVE_QUIZ_CONSTANTS;
+    const currentCount = currentState.consecutiveErrorsByTopic[questionTopic] || 0;
+
+    if (isCorrect) {
+      // Reset counter on correct answer
+      return {
+        ...currentState,
+        consecutiveErrorsByTopic: {
+          ...currentState.consecutiveErrorsByTopic,
+          [questionTopic]: 0
+        },
+        lastTopic: questionTopic,
+        questionsSinceBlock: currentState.blockedTopics.size > 0
+          ? currentState.questionsSinceBlock + 1
+          : 0
+      };
+    }
+
+    // Increment error count
+    const newCount = currentCount + 1;
+    const newConsecutive = {
+      ...currentState.consecutiveErrorsByTopic,
+      [questionTopic]: newCount
+    };
+
+    // Check if threshold reached
+    if (newCount >= FRUSTRATION_THRESHOLD) {
+      logger.warn('useQuizSession: Frustration detected on topic', {
+        topic: questionTopic,
+        consecutiveErrors: newCount
+      });
+
+      return {
+        ...currentState,
+        consecutiveErrorsByTopic: newConsecutive,
+        blockedTopics: new Set([...currentState.blockedTopics, questionTopic]),
+        lastTopic: questionTopic,
+        questionsSinceBlock: 0
+      };
+    }
+
+    return {
+      ...currentState,
+      consecutiveErrorsByTopic: newConsecutive,
+      lastTopic: questionTopic,
+      questionsSinceBlock: currentState.blockedTopics.size > 0
+        ? currentState.questionsSinceBlock + 1
+        : 0
+    };
+  }, []);
+
+  /**
+   * Apply cooldown to unblock topics after waiting period
+   */
+  const applyCooldown = useCallback((state: FrustrationState): FrustrationState => {
+    const { COOLDOWN_QUESTIONS } = ADAPTIVE_QUIZ_CONSTANTS;
+
+    if (state.questionsSinceBlock >= COOLDOWN_QUESTIONS && state.blockedTopics.size > 0) {
+      logger.info('useQuizSession: Cooldown complete, unblocking topics');
+      return {
+        ...state,
+        blockedTopics: new Set(),
+        consecutiveErrorsByTopic: {},
+        questionsSinceBlock: 0
+      };
+    }
+    return state;
+  }, []);
+
+  // Reset answer timer when question changes
+  useEffect(() => {
+    setAnswerStartTime(Date.now());
+  }, [currentIndex]);
+
+  // Handle answer selection with adaptive tracking
   const handleAnswer = useCallback((optionIndex: number) => {
     if (isAnswered || questions.length === 0) return;
+
+    const answerTime = (Date.now() - answerStartTime) / 1000; // Seconds
+    const currentQ = questions[currentIndex];
+    const isCorrect = optionIndex === currentQ.correctAnswerIndex;
+    // Use question's topic field (from Gemini) or fall back to session topic from options
+    const questionTopic = currentQ.topic || topic;
 
     setSelectedOption(optionIndex);
     setIsAnswered(true);
@@ -212,10 +410,54 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     });
 
     // Update score if correct
-    if (optionIndex === questions[currentIndex].correctAnswerIndex) {
+    if (isCorrect) {
       setScore(s => s + 1);
     }
-  }, [isAnswered, questions, currentIndex]);
+
+    // Update fatigue tracking
+    const newFatigueState = updateFatigueState(fatigueState, answerTime, isCorrect, currentIndex);
+    setFatigueState(newFatigueState);
+
+    // Check fatigue and end early if detected
+    if (newFatigueState.fatigueDetected && currentIndex >= ADAPTIVE_QUIZ_CONSTANTS.FATIGUE_MIN_QUESTIONS) {
+      logger.info('useQuizSession: Fatigue detected, ending early', {
+        questionIndex: currentIndex,
+        avgTime: newFatigueState.averageAnswerTime,
+        recentTimes: newFatigueState.recentAnswerTimes
+      });
+      setFatigueEndMessage(getEncouragementMessage('fatigue'));
+      setEarlyEndReason('fatigue');
+      setIsFinished(true);
+      return;
+    }
+
+    // Update frustration tracking
+    let newFrustrationState = updateFrustrationState(frustrationState, questionTopic, isCorrect);
+    newFrustrationState = applyCooldown(newFrustrationState);
+    setFrustrationState(newFrustrationState);
+
+    // Check if all topics blocked (end quiz)
+    // Only check on last question or if we have multiple topics
+    const uniqueTopics = new Set(questions.map(q => q.topic || '')).size;
+    if (newFrustrationState.blockedTopics.size > 0 && newFrustrationState.blockedTopics.size >= uniqueTopics) {
+      logger.info('useQuizSession: All topics blocked by frustration, ending early');
+      setFrustrationEndMessage(getEncouragementMessage('frustration'));
+      setEarlyEndReason('frustration');
+      setIsFinished(true);
+      return;
+    }
+  }, [
+    isAnswered,
+    questions,
+    currentIndex,
+    answerStartTime,
+    topic,
+    fatigueState,
+    frustrationState,
+    updateFatigueState,
+    updateFrustrationState,
+    applyCooldown
+  ]);
 
   // Move to next question
   const nextQuestion = useCallback(() => {
@@ -358,6 +600,11 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     isAnswered,
     showTip,
 
+    // Early end messages
+    fatigueEndMessage,
+    frustrationEndMessage,
+    earlyEndReason,
+
     // Final review state
     recommendations,
     isGeneratingRecs,
@@ -366,6 +613,10 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     // Derived state
     currentQuestion,
     percentage,
+
+    // Adaptive state (for analytics)
+    fatigueState,
+    frustrationState,
 
     // Actions
     loadQuestions,
