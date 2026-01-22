@@ -50,3 +50,12 @@ export { logger } from './logger';
 // Retry
 export { retry, withRetry } from './retry';
 export type { RetryOptions } from './retry';
+
+// Learner Model (BKT)
+export {
+  updateBKT,
+  getBKTParams,
+  recommendDifficulty,
+  calculateTrend,
+  BKT_DEFAULTS
+} from './learnerModel';
