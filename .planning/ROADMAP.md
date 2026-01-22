@@ -34,10 +34,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 4. Each topic shows mastery probability, practice count, and last practice date
 5. Profile schema supports future extensions (speed, consistency, question type breakdown)
 
-**Plans**: TBD
+**Plans**: 4 plans in 4 waves
 
 Plans:
-- [ ] TBD during planning
+- [ ] 01-01-PLAN.md — Core types and BKT algorithm (types.ts, lib/learnerModel.ts)
+- [ ] 01-02-PLAN.md — Profile and signal services (Firestore CRUD, signal processing)
+- [ ] 01-03-PLAN.md — Store integration and useLearnerProfile hook
+- [ ] 01-04-PLAN.md — UI integration in AnalysisTab with topic mastery display
 
 ### Phase 2: Profile-Aware Quiz Generation
 **Goal**: Quiz questions adapt to child's profile, focusing on weaknesses while maintaining challenge balance
@@ -126,7 +129,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Profile Foundation | 0/TBD | Not started | - |
+| 1. Profile Foundation | 0/4 | Planned | - |
 | 2. Profile-Aware Quiz Generation | 0/TBD | Not started | - |
 | 3. Recommendation Engine | 0/TBD | Not started | - |
 | 4. Multi-Signal Integration | 0/TBD | Not started | - |
