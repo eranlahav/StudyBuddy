@@ -21,7 +21,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import Confetti from 'react-confetti';
-import { useQuizSession, useAutoSpeak, useConfetti, getScoreEmoji, useSpeechSynthesis } from '../hooks';
+import { useQuizSession, useAutoSpeak, useConfetti, getScoreEmoji, useSpeechSynthesis, useLearnerProfile } from '../hooks';
 
 export const QuizSession: React.FC = () => {
   const { childId, subjectId, topic } = useParams();
@@ -33,13 +33,17 @@ export const QuizSession: React.FC = () => {
   const decodedTopic = decodeURIComponent(topic || '');
   const isFinalReview = decodedTopic === 'final-review';
 
-  // Initialize quiz session hook
+  // Fetch learner profile for adaptive quiz generation
+  const { profile } = useLearnerProfile(child || null);
+
+  // Initialize quiz session hook with learner profile for adaptive generation
   const quiz = useQuizSession({
     child: child!,
     subject: subject!,
     topic: decodedTopic,
     upcomingTests,
     isFinalReview,
+    profile, // Pass learner profile for adaptive quiz generation
     onSessionSave: async (sessionData) => {
       if (child && subject) {
         try {
@@ -459,21 +463,39 @@ const FinishedScreen: React.FC<FinishedScreenProps> = ({
   showConfetti,
   confettiProps,
   onNavigateHome
-}) => (
+}) => {
+  // Check for early end due to fatigue or frustration
+  const earlyEndMessage = quiz.fatigueEndMessage || quiz.frustrationEndMessage;
+  const isEarlyEnd = Boolean(quiz.earlyEndReason);
+
+  return (
   <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in max-w-2xl mx-auto">
-    {showConfetti && <Confetti {...confettiProps} />}
+    {showConfetti && !isEarlyEnd && <Confetti {...confettiProps} />}
 
     <div className="text-8xl mb-6">
-      {getScoreEmoji(quiz.percentage)}
+      {isEarlyEnd ? '🌟' : getScoreEmoji(quiz.percentage)}
     </div>
 
-    <h1 className="text-4xl font-bold text-slate-800 mb-2">
-      {isFinalReview ? 'סיימת את החזרה הגנרלית!' : 'סיימת את התרגול!'}
-    </h1>
-
-    <p className="text-xl text-slate-600 mb-8">
-      הניקוד שלך: <span className="font-bold text-indigo-600">{quiz.score}</span> מתוך <span className="font-bold text-indigo-600">{quiz.questions.length}</span>
-    </p>
+    {/* Early End Encouragement Message */}
+    {earlyEndMessage ? (
+      <>
+        <h1 className="text-4xl font-bold text-slate-800 mb-2">
+          {earlyEndMessage}
+        </h1>
+        <p className="text-xl text-slate-600 mb-8">
+          עשית עבודה טובה! הניקוד שלך: <span className="font-bold text-indigo-600">{quiz.score}</span> מתוך <span className="font-bold text-indigo-600">{quiz.questions.length}</span>
+        </p>
+      </>
+    ) : (
+      <>
+        <h1 className="text-4xl font-bold text-slate-800 mb-2">
+          {isFinalReview ? 'סיימת את החזרה הגנרלית!' : 'סיימת את התרגול!'}
+        </h1>
+        <p className="text-xl text-slate-600 mb-8">
+          הניקוד שלך: <span className="font-bold text-indigo-600">{quiz.score}</span> מתוך <span className="font-bold text-indigo-600">{quiz.questions.length}</span>
+        </p>
+      </>
+    )}
 
     {/* Remediation Created Message */}
     {quiz.createdRemediation && (
@@ -530,4 +552,5 @@ const FinishedScreen: React.FC<FinishedScreenProps> = ({
       </Button>
     )}
   </div>
-);
+  );
+};
