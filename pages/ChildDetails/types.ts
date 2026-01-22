@@ -2,7 +2,7 @@
  * Shared types for ChildDetails page components
  */
 
-import { ChildProfile, Subject, StudySession, UpcomingTest, Evaluation } from '../../types';
+import { ChildProfile, Subject, StudySession, UpcomingTest, Evaluation, LearnerProfile } from '../../types';
 
 /**
  * Props shared by all tab components
@@ -17,6 +17,10 @@ export interface TabBaseProps {
  */
 export interface AnalysisTabProps extends TabBaseProps {
   sessions: StudySession[];
+  // NEW: Profile data for topic mastery display
+  profile: LearnerProfile | null;
+  profileLoading: boolean;
+  profileConfidence: 'low' | 'medium' | 'high';
 }
 
 /**
