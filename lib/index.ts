@@ -27,6 +27,7 @@ export {
   TopicExtractionError,
   EvaluationAnalysisError,
   DatabaseError,
+  ProfileUpdateError,
   ConfigurationError,
   AuthError,
   AuthenticationError,

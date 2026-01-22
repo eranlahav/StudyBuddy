@@ -104,6 +104,20 @@ export class DatabaseError extends AppError {
 }
 
 /**
+ * Error thrown when profile update operations fail
+ */
+export class ProfileUpdateError extends AppError {
+  constructor(message: string, options: { cause?: Error } = {}) {
+    super(
+      message,
+      'לא הצלחנו לעדכן את הפרופיל. הנתונים נשמרו בכל מקרה.',
+      { ...options, recoverable: true }
+    );
+    this.name = 'ProfileUpdateError';
+  }
+}
+
+/**
  * Error thrown when required environment variables are missing
  */
 export class ConfigurationError extends AppError {
