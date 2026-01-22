@@ -11,28 +11,28 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 ## Current Position
 
 Phase: 1 of 5 (Profile Foundation)
-Plan: 1 of TBD in current phase
+Plan: 2 of TBD in current phase
 Status: In progress
-Last activity: 2026-01-22 — Completed 01-01-PLAN.md (Foundation Types & BKT Algorithm)
+Last activity: 2026-01-22 — Completed 01-02-PLAN.md (Profile & Signal Services)
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
+- Total plans completed: 2
 - Average duration: 2 minutes
-- Total execution time: 0.03 hours
+- Total execution time: 0.07 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 - Profile Foundation | 1 | 2 min | 2 min |
+| 01 - Profile Foundation | 2 | 4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min)
-- Trend: Just started
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min)
+- Trend: Consistent velocity
 
 *Updated after each plan completion*
 
@@ -54,11 +54,21 @@ Key decisions affecting current work:
 - Mastery thresholds: weak (<0.5), learning (0.5-0.8), mastered (>=0.8) — Standard educational research thresholds
 - 10-attempt performance window with 6-attempt minimum for trends — Balance responsiveness with statistical validity
 
+**New from 01-02:**
+- Subcollection storage at /children/{childId}/learnerProfile/main — Prevents bloating children queries, enables independent subscriptions
+- Fire-and-forget pattern for profile updates — Update failures never block quiz completion flow
+- Lazy profile initialization (null until first quiz) — Avoids unnecessary writes for inactive children
+- Chronological replay for bootstrapProfile — Order-sensitive BKT requires correct session sequencing
+
 ### Pending Todos
 
 None yet.
 
 ### Blockers/Concerns
+
+**Phase 01-03 Readiness:**
+- Profile services ready for integration in quiz session components
+- Fire-and-forget pattern means profile updates can silently fail - monitoring recommended
 
 **Phase 2 Readiness:**
 - BKT parameters (pKnown, pLearn, pGuess, pSlip) need calibration with real usage data after implementation
@@ -75,7 +85,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 01-01-PLAN.md execution (3 tasks, 3 commits)
+Stopped at: Completed 01-02-PLAN.md execution (3 tasks, 3 commits)
 Resume file: None
 
 ---
