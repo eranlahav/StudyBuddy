@@ -12,7 +12,7 @@ Transform Study Buddy from a quiz generator into an adaptive learning system tha
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Profile Foundation** - Data collection schema and BKT algorithm implementation
+- [x] **Phase 1: Profile Foundation** - Data collection schema and BKT algorithm implementation
 - [ ] **Phase 2: Profile-Aware Quiz Generation** - Personalize questions based on learner profiles
 - [ ] **Phase 3: Recommendation Engine** - AI-powered topic suggestions with parent control
 - [ ] **Phase 4: Multi-Signal Integration** - School tests and engagement tracking
@@ -37,10 +37,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans in 4 waves
 
 Plans:
-- [ ] 01-01-PLAN.md — Core types and BKT algorithm (types.ts, lib/learnerModel.ts)
-- [ ] 01-02-PLAN.md — Profile and signal services (Firestore CRUD, signal processing)
-- [ ] 01-03-PLAN.md — Store integration and useLearnerProfile hook
-- [ ] 01-04-PLAN.md — UI integration in AnalysisTab with topic mastery display
+- [x] 01-01-PLAN.md — Core types and BKT algorithm (types.ts, lib/learnerModel.ts)
+- [x] 01-02-PLAN.md — Profile and signal services (Firestore CRUD, signal processing)
+- [x] 01-03-PLAN.md — Store integration and useLearnerProfile hook
+- [x] 01-04-PLAN.md — UI integration in AnalysisTab with topic mastery display
 
 ### Phase 2: Profile-Aware Quiz Generation
 **Goal**: Quiz questions adapt to child's profile, focusing on weaknesses while maintaining challenge balance
@@ -129,7 +129,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Profile Foundation | 0/4 | Planned | - |
+| 1. Profile Foundation | 4/4 | ✓ Complete | 2026-01-22 |
 | 2. Profile-Aware Quiz Generation | 0/TBD | Not started | - |
 | 3. Recommendation Engine | 0/TBD | Not started | - |
 | 4. Multi-Signal Integration | 0/TBD | Not started | - |
