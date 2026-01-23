@@ -190,3 +190,12 @@ export {
   deleteLearningGoal,
   subscribeToGoals
 } from './goalsService';
+
+// Regression Alerts (Phase 5)
+export {
+  detectRegression,
+  shouldAlertForRegression,
+  createRegressionAlert,
+  formatAlertMessage,
+  ALERT_CONFIG
+} from './alertService';
