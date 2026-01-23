@@ -32,3 +32,7 @@ export type {
   UseLearnerProfileOptions,
   UseLearnerProfileReturn
 } from './useLearnerProfile';
+
+// Recommendations
+export { useRecommendations } from './useRecommendations';
+export type { UseRecommendationsReturn } from './useRecommendations';
