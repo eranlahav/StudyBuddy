@@ -18,6 +18,7 @@ import {
 import { db } from '../firebaseConfig';
 import { StudySession } from '../types';
 import { logger, DatabaseError } from '../lib';
+import { isTestKid } from '../constants/testKids';
 
 const COLLECTION = 'sessions';
 
@@ -52,8 +53,18 @@ export function subscribeToSessions(
 
 /**
  * Add a new study session
+ * Silently skips for test kids (allows quiz completion without Firebase writes)
  */
 export async function addSession(session: StudySession): Promise<void> {
+  // Silently skip for test kids (allows quiz flow to complete normally)
+  if (isTestKid(session.childId)) {
+    logger.debug('sessionsService: Skipping save for test kid', {
+      childId: session.childId,
+      score: `${session.score}/${session.totalQuestions}`
+    });
+    return;
+  }
+
   try {
     await setDoc(doc(db, COLLECTION, session.id), session);
     logger.info('sessionsService: Session added', {

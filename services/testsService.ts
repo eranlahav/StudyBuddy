@@ -20,6 +20,14 @@ import {
 import { db } from '../firebaseConfig';
 import { UpcomingTest } from '../types';
 import { logger, DatabaseError } from '../lib';
+import { isTestKid } from '../constants/testKids';
+
+/**
+ * Check if a test ID belongs to a mock test
+ */
+function isTestMockTest(testId: string): boolean {
+  return testId.startsWith('test-upcoming-');
+}
 
 const COLLECTION = 'upcomingTests';
 
@@ -52,8 +60,15 @@ export function subscribeToTests(
 
 /**
  * Add a new upcoming test
+ * Silently skips for test kids (mock tests are read-only)
  */
 export async function addTest(test: UpcomingTest): Promise<void> {
+  // Silently skip for test kids
+  if (isTestKid(test.childId)) {
+    logger.debug('testsService: Skipping add for test kid', { childId: test.childId });
+    return;
+  }
+
   try {
     await setDoc(doc(db, COLLECTION, test.id), test);
     logger.info('testsService: Test added', {
@@ -70,11 +85,17 @@ export async function addTest(test: UpcomingTest): Promise<void> {
 
 /**
  * Update an existing test
+ * Throws error for mock tests (read-only)
  */
 export async function updateTest(
   id: string,
   updates: Partial<UpcomingTest>
 ): Promise<void> {
+  // Prevent modifying mock tests
+  if (isTestMockTest(id)) {
+    throw new Error('לא ניתן לערוך מבחני בדיקה');
+  }
+
   try {
     await updateDoc(doc(db, COLLECTION, id), updates);
     logger.debug('testsService: Test updated', { testId: id, fields: Object.keys(updates) });
@@ -86,8 +107,14 @@ export async function updateTest(
 
 /**
  * Delete a test
+ * Throws error for mock tests (read-only)
  */
 export async function deleteTest(id: string): Promise<void> {
+  // Prevent deleting mock tests
+  if (isTestMockTest(id)) {
+    throw new Error('לא ניתן למחוק מבחני בדיקה');
+  }
+
   try {
     await deleteDoc(doc(db, COLLECTION, id));
     logger.info('testsService: Test deleted', { testId: id });

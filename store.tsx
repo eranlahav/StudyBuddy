@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User as FirebaseUser } from 'firebase/auth';
 import { AppState, ChildProfile, Subject, StudySession, UpcomingTest, Evaluation, Parent, Family, SUPER_ADMIN_EMAIL } from './types';
 import { DEFAULT_SUBJECTS } from './constants';
-// Note: MOCK_CHILDREN removed - families create their own children
+import { TEST_KIDS, TEST_SESSIONS, TEST_UPCOMING_TESTS } from './constants/testKids';
 import { logger } from './lib';
 import {
   // Auth services
@@ -80,6 +80,10 @@ interface StoreContextType extends AppState {
   addEvaluation: (evaluation: Omit<Evaluation, 'familyId'>) => Promise<void>;
   updateEvaluation: (id: string, updates: Partial<Evaluation>) => Promise<void>;
   deleteEvaluation: (id: string, fileUrls?: string[]) => Promise<void>;
+
+  // Test mode (super admin only)
+  isTestMode: boolean;
+  toggleTestMode: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -100,6 +104,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [parent, setParent] = useState<Parent | null>(null);
   const [family, setFamily] = useState<Family | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+
+  // Test mode state (super admin only) - persists via localStorage
+  const [isTestMode, setIsTestMode] = useState(() => {
+    return localStorage.getItem('test_mode') === 'true';
+  });
 
   // Track loading state for each collection individually
   const [loadingStatus, setLoadingStatus] = useState({
@@ -481,6 +490,39 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await deleteEvaluationService(id, fileUrls);
   }, []);
 
+  // --- Test Mode Toggle (Super Admin Only) ---
+  const toggleTestMode = useCallback(() => {
+    if (!parent?.isSuperAdmin) {
+      logger.warn('store: Non-admin attempted to toggle test mode');
+      return;
+    }
+
+    setIsTestMode(prev => {
+      const newValue = !prev;
+      localStorage.setItem('test_mode', newValue.toString());
+      logger.info('store: Test mode toggled', { enabled: newValue });
+      return newValue;
+    });
+  }, [parent?.isSuperAdmin]);
+
+  // --- Test Mode Data Override ---
+  // When test mode is active, replace real data with test kids
+  useEffect(() => {
+    if (isTestMode && parent?.isSuperAdmin) {
+      logger.info('store: Activating test mode with mock data');
+      setState(prev => ({
+        ...prev,
+        children: TEST_KIDS,
+        sessions: TEST_SESSIONS,
+        upcomingTests: TEST_UPCOMING_TESTS,
+        evaluations: [], // No mock evaluations for test kids
+        isLoading: false
+      }));
+    }
+    // When test mode is disabled, the normal family subscription will restore data
+    // (handled by the family?.id effect dependency)
+  }, [isTestMode, parent?.isSuperAdmin]);
+
   return (
     <StoreContext.Provider value={{
       ...state,
@@ -503,6 +545,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       addEvaluation,
       updateEvaluation,
       deleteEvaluation,
+      isTestMode,
+      toggleTestMode,
     }}>
       {children}
     </StoreContext.Provider>

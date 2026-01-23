@@ -20,6 +20,7 @@ import {
 import { db } from '../firebaseConfig';
 import { ChildProfile } from '../types';
 import { logger, DatabaseError } from '../lib';
+import { isTestKid } from '../constants/testKids';
 
 const COLLECTION = 'children';
 
@@ -65,11 +66,17 @@ export async function addChild(child: ChildProfile): Promise<void> {
 
 /**
  * Update an existing child profile
+ * Throws error for test kids (read-only mock data)
  */
 export async function updateChild(
   id: string,
   updates: Partial<ChildProfile>
 ): Promise<void> {
+  // Prevent modifying test kids
+  if (isTestKid(id)) {
+    throw new Error('לא ניתן לערוך ילדי בדיקה');
+  }
+
   try {
     await updateDoc(doc(db, COLLECTION, id), updates);
     logger.debug('childrenService: Child updated', { childId: id, fields: Object.keys(updates) });
@@ -81,8 +88,14 @@ export async function updateChild(
 
 /**
  * Delete a child profile
+ * Throws error for test kids (read-only mock data)
  */
 export async function deleteChild(id: string): Promise<void> {
+  // Prevent deleting test kids
+  if (isTestKid(id)) {
+    throw new Error('לא ניתן למחוק ילדי בדיקה');
+  }
+
   try {
     await deleteDoc(doc(db, COLLECTION, id));
     logger.info('childrenService: Child deleted', { childId: id });
@@ -94,8 +107,14 @@ export async function deleteChild(id: string): Promise<void> {
 
 /**
  * Reset a child's stars and streak to zero
+ * Throws error for test kids (read-only mock data)
  */
 export async function resetChildStats(id: string): Promise<void> {
+  // Prevent resetting test kids
+  if (isTestKid(id)) {
+    throw new Error('לא ניתן לאפס ילדי בדיקה');
+  }
+
   try {
     await updateDoc(doc(db, COLLECTION, id), {
       stars: 0,
@@ -110,6 +129,7 @@ export async function resetChildStats(id: string): Promise<void> {
 
 /**
  * Award points and increment streak for a child
+ * Silently skips for test kids (allows quiz completion without errors)
  */
 export async function awardPoints(
   id: string,
@@ -117,6 +137,12 @@ export async function awardPoints(
   currentStreak: number,
   pointsEarned: number
 ): Promise<void> {
+  // Silently skip for test kids (allows quiz flow to complete normally)
+  if (isTestKid(id)) {
+    logger.debug('childrenService: Skipping points for test kid', { childId: id, pointsEarned });
+    return;
+  }
+
   try {
     await updateDoc(doc(db, COLLECTION, id), {
       stars: currentStars + pointsEarned,

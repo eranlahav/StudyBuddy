@@ -11,7 +11,7 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { parent, family, signOut } = useStore();
+  const { parent, family, signOut, isTestMode, toggleTestMode } = useStore();
   const isParentView = location.pathname.startsWith('/parent');
   const isChildView = location.pathname.startsWith('/child');
   const isHome = location.pathname === '/';
@@ -98,6 +98,25 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     )}
                     <span className="font-medium">{parent.displayName}</span>
                   </div>
+
+                  {/* Test Mode Toggle - Super Admin Only */}
+                  {parent.isSuperAdmin && (
+                    <button
+                      onClick={toggleTestMode}
+                      className={`
+                        px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-all duration-200
+                        ${isTestMode
+                          ? 'bg-amber-100 text-amber-800 border-2 border-amber-300 hover:bg-amber-200'
+                          : 'text-gray-500 hover:bg-gray-100 border-2 border-transparent hover:text-gray-700'
+                        }
+                      `}
+                      title={isTestMode ? 'חזרה לילדים אמיתיים' : 'עבור למצב בדיקה'}
+                    >
+                      <span className={isTestMode ? 'animate-pulse' : ''}>🧪</span>
+                      <span className="hidden sm:inline">מצב בדיקה</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={handleLogout}
                     className="text-red-500 hover:bg-red-50 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
@@ -111,6 +130,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </nav>
+
+      {/* Test Mode Banner - Super Admin Only */}
+      {isTestMode && parent?.isSuperAdmin && (
+        <div className="bg-amber-50 border-b-2 border-amber-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <div className="flex items-center justify-center gap-2 text-amber-800 text-sm font-medium">
+              <span className="animate-pulse">🧪</span>
+              <span>מצב בדיקה פעיל - הנתונים המוצגים הם דמה</span>
+              <button
+                onClick={toggleTestMode}
+                className="underline hover:no-underline mr-2"
+              >
+                חזרה לילדים אמיתיים
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {children}
