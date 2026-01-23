@@ -68,3 +68,27 @@ export {
   getEncouragementMessage,
   getParentExplanation
 } from './encouragement';
+
+// OCR utilities
+export {
+  detectOcrIssues,
+  hasCriticalIssues,
+  getConfidenceLabel,
+  getConfidenceColorClass,
+  getScoreColorClass,
+  getTestTypeLabel
+} from './ocrUtils';
+export type { OcrIssue, OcrIssueType, OcrIssueSeverity } from './ocrUtils';
+
+// Signal Weights (Phase 4)
+export {
+  getBaseConfidence,
+  applyRecencyDecay,
+  applySampleSizeBoost,
+  calculateSignalConfidence,
+  fuseSignals,
+  daysSince,
+  SIGNAL_WEIGHTS,
+  RECENCY_CONFIG,
+  SAMPLE_SIZE_CONFIG
+} from './signalWeights';
