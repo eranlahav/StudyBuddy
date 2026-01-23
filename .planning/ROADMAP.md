@@ -78,10 +78,13 @@ Plans:
 5. Recommendations balance weakness remediation (30%), growth (40%), and maintenance (30%)
 6. Parent can set learning targets (e.g., "master fractions by June") that influence recommendations
 
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
 
 Plans:
-- [ ] TBD during planning
+- [ ] 03-01-PLAN.md — Core types and scoring service (types.ts, recommendationService.ts)
+- [ ] 03-02-PLAN.md — Goals service (Firestore CRUD for learning goals)
+- [ ] 03-03-PLAN.md — useRecommendations hook (orchestration)
+- [ ] 03-04-PLAN.md — UI components (RecommendationsPanel, RecommendationCard, OverrideModal, GoalForm)
 
 ### Phase 4: Multi-Signal Integration
 **Goal**: Profile learns from school tests and engagement patterns, not just quiz performance
@@ -131,11 +134,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Profile Foundation | 4/4 | ✓ Complete | 2026-01-22 |
-| 2. Profile-Aware Quiz Generation | 3/3 | ✓ Complete | 2026-01-22 |
-| 3. Recommendation Engine | 0/TBD | Not started | - |
+| 1. Profile Foundation | 4/4 | Complete | 2026-01-22 |
+| 2. Profile-Aware Quiz Generation | 3/3 | Complete | 2026-01-22 |
+| 3. Recommendation Engine | 0/4 | Planned | - |
 | 4. Multi-Signal Integration | 0/TBD | Not started | - |
 | 5. Profile Maintenance & Visualization | 0/TBD | Not started | - |
 
 ---
-*Last updated: 2026-01-22*
+*Last updated: 2026-01-23*
