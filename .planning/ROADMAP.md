@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Profile-Aware Quiz Generation** - Personalize questions based on learner profiles
 - [x] **Phase 3: Recommendation Engine** - AI-powered topic suggestions with parent control
 - [x] **Phase 4: Multi-Signal Integration** - School tests and engagement tracking
-- [ ] **Phase 5: Profile Maintenance & Visualization** - Forgetting curves, regression detection, analytics UI
+- [x] **Phase 5: Profile Maintenance & Visualization** - Forgetting curves, regression detection, analytics UI
 
 ## Phase Details
 
@@ -128,13 +128,13 @@ Plans:
 **Plans**: 7 plans in 3 waves
 
 Plans:
-- [ ] 05-01-PLAN.md — Forgetting curve library and type extensions (lib/forgettingCurve.ts, types.ts)
-- [ ] 05-02-PLAN.md — Alert service for regression detection (services/alertService.ts)
-- [ ] 05-03-PLAN.md — Probe scheduler, review mode, and useQuizSession wiring
-- [ ] 05-04-PLAN.md — AI prerequisite detection (services/prerequisiteService.ts)
-- [ ] 05-05-PLAN.md — Visualization components (SkillRadarChart.tsx, ProgressTimeline.tsx)
-- [ ] 05-06-PLAN.md — Service and hook integration (profileService, useLearnerProfile with notifications)
-- [ ] 05-07-PLAN.md — AnalysisTab UI integration (radar chart, timeline drill-down)
+- [x] 05-01-PLAN.md — Forgetting curve library and type extensions (lib/forgettingCurve.ts, types.ts)
+- [x] 05-02-PLAN.md — Alert service for regression detection (services/alertService.ts)
+- [x] 05-03-PLAN.md — Probe scheduler, review mode, and useQuizSession wiring
+- [x] 05-04-PLAN.md — AI prerequisite detection (services/prerequisiteService.ts)
+- [x] 05-05-PLAN.md — Visualization components (SkillRadarChart.tsx, ProgressTimeline.tsx)
+- [x] 05-06-PLAN.md — Service and hook integration (profileService, useLearnerProfile with notifications)
+- [x] 05-07-PLAN.md — AnalysisTab UI integration (radar chart, timeline drill-down)
 
 ## Progress
 
@@ -147,7 +147,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Profile-Aware Quiz Generation | 3/3 | Complete | 2026-01-22 |
 | 3. Recommendation Engine | 4/4 | Complete | 2026-01-23 |
 | 4. Multi-Signal Integration | 4/4 | Complete | 2026-01-23 |
-| 5. Profile Maintenance & Visualization | 0/7 | Planned | - |
+| 5. Profile Maintenance & Visualization | 7/7 | Complete | 2026-01-23 |
 
 ---
 *Last updated: 2026-01-23*
