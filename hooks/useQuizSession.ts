@@ -31,7 +31,8 @@ import {
   hasProfileData
 } from '../services/adaptiveQuizService';
 import { generateDictationQuestions } from '../services/dictationService';
-import { getUserMessage, logger, getEncouragementMessage } from '../lib';
+import { getUserMessage, logger, getEncouragementMessage, buildEngagementMetrics } from '../lib';
+import { processEngagementSignal } from '../services/signalService';
 
 export interface QuizSessionState {
   /** Current questions */
@@ -185,6 +186,10 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
 
   // Answer timing
   const [answerStartTime, setAnswerStartTime] = useState<number>(Date.now());
+
+  // Session timing for engagement metrics
+  const [sessionStartTime] = useState<number>(Date.now());
+  const [answerTimesMs, setAnswerTimesMs] = useState<number[]>([]);
 
   // Find relevant test for this session
   const findRelevantTest = useCallback(() => {
@@ -505,6 +510,10 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
       return newAnswers;
     });
 
+    // Track answer time for engagement metrics
+    const answerTimeMs = Date.now() - answerStartTime;
+    setAnswerTimesMs(prev => [...prev, answerTimeMs]);
+
     // Update score if correct
     if (isCorrect) {
       setScore(s => s + 1);
@@ -524,6 +533,25 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
       setFatigueEndMessage(getEncouragementMessage('fatigue'));
       setEarlyEndReason('fatigue');
       setIsFinished(true);
+
+      // Fire engagement signal for early exit
+      const sessionEndTime = Date.now();
+      const metrics = buildEngagementMetrics({
+        sessionStartTime,
+        sessionEndTime,
+        questionsAnswered: currentIndex + 1,
+        questionsAvailable: questions.length,
+        answerTimes: [...answerTimesMs, answerTimeMs],
+        earlyExit: true
+      });
+      processEngagementSignal(
+        child.id,
+        child.familyId,
+        questionTopic,
+        subject.id,
+        metrics,
+        child.grade
+      ).catch(() => {});
       return;
     }
 
@@ -540,6 +568,25 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
       setFrustrationEndMessage(getEncouragementMessage('frustration'));
       setEarlyEndReason('frustration');
       setIsFinished(true);
+
+      // Fire engagement signal for frustration exit
+      const sessionEndTime = Date.now();
+      const metrics = buildEngagementMetrics({
+        sessionStartTime,
+        sessionEndTime,
+        questionsAnswered: currentIndex + 1,
+        questionsAvailable: questions.length,
+        answerTimes: [...answerTimesMs, answerTimeMs],
+        earlyExit: true
+      });
+      processEngagementSignal(
+        child.id,
+        child.familyId,
+        questionTopic,
+        subject.id,
+        metrics,
+        child.grade
+      ).catch(() => {});
       return;
     }
   }, [
@@ -582,6 +629,29 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
           totalQuestions: questions.length,
           questions,
           userAnswers
+        });
+
+        // Fire engagement signal (fire-and-forget)
+        const sessionEndTime = Date.now();
+        const metrics = buildEngagementMetrics({
+          sessionStartTime,
+          sessionEndTime,
+          questionsAnswered: userAnswers.length,
+          questionsAvailable: questions.length,
+          answerTimes: answerTimesMs,
+          earlyExit: earlyEndReason !== null
+        });
+
+        // Fire-and-forget: don't await, errors handled internally
+        processEngagementSignal(
+          child.id,
+          child.familyId,
+          topic,
+          subject.id,
+          metrics,
+          child.grade
+        ).catch(() => {
+          // Silently ignore - fire-and-forget
         });
       } catch (e) {
         logger.error('useQuizSession: Failed to save session', { childId: child.id }, e);
@@ -666,10 +736,14 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     questions,
     userAnswers,
     subject,
-    child.id,
+    child,
+    topic,
     findRelevantTest,
     onSessionSave,
-    onAddRemediationTest
+    onAddRemediationTest,
+    sessionStartTime,
+    answerTimesMs,
+    earlyEndReason
   ]);
 
   // Load questions on mount
