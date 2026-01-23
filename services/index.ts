@@ -174,3 +174,10 @@ export {
   getOrderedTopics,
   hasProfileData
 } from './adaptiveQuizService';
+
+// Recommendation Engine (Phase 3)
+export {
+  scoreTopic,
+  generateRecommendations,
+  recordOverride
+} from './recommendationService';
