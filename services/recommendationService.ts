@@ -15,19 +15,18 @@
 import { db } from '../firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
 import { logger } from '../lib/logger';
-import { generateId } from '../lib/utils';
-import type {
-  LearnerProfile,
-  TopicMastery,
-  UpcomingTest,
-  LearningGoal,
-  TopicScore,
-  Recommendation,
-  OverrideReason,
-  RecommendationOverride,
-  ScoringWeights
+import {
+  DEFAULT_SCORING_WEIGHTS,
+  type LearnerProfile,
+  type TopicMastery,
+  type UpcomingTest,
+  type LearningGoal,
+  type TopicScore,
+  type Recommendation,
+  type OverrideReason,
+  type RecommendationOverride,
+  type ScoringWeights
 } from '../types';
-import { DEFAULT_SCORING_WEIGHTS } from '../types';
 
 /**
  * Calculate mastery score (0-100)
