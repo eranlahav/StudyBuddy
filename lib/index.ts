@@ -101,3 +101,10 @@ export {
   getEngagementColorClass,
   ENGAGEMENT_CONFIG
 } from './engagementDetector';
+
+// Forgetting Curve (Phase 5)
+export {
+  applyForgettingCurve,
+  applyForgettingCurveToProfile,
+  FORGETTING_CONFIG
+} from './forgettingCurve';
