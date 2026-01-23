@@ -14,6 +14,8 @@ import { AnalysisTabProps, AnalysisData, TopicPerformance } from './types';
 import { LearnerProfile, TopicMastery, getMasteryLevel, MasteryLevel } from '../../types';
 import { formatRelativeDay, getEngagementLabel, getEngagementColorClass } from '../../lib';
 import { getConfidenceMessage } from '../../hooks';
+import { SkillRadarChart } from './SkillRadarChart';
+import { ProgressTimeline } from './ProgressTimeline';
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   subjects,
@@ -23,6 +25,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   profileConfidence
 }) => {
   const [analysisFilter, setAnalysisFilter] = useState<string>('all');
+  // IMPORTANT: Store the full TopicMastery object, not just a string key
+  // This avoids lookup issues with composite keys not matching topicMastery structure
+  const [selectedTopic, setSelectedTopic] = useState<TopicMastery | null>(null);
 
   // Compute analysis data
   const analysisData = useMemo((): AnalysisData => {
@@ -114,7 +119,38 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         profileConfidence={profileConfidence}
         subjects={subjects}
         selectedSubject={analysisFilter}
+        selectedTopic={selectedTopic}
+        setSelectedTopic={setSelectedTopic}
       />
+
+      {/* Progress Timeline - shown when topic clicked */}
+      {selectedTopic && (
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-bold text-gray-900">מגמת התקדמות</h3>
+            <button
+              onClick={() => setSelectedTopic(null)}
+              className="text-sm text-indigo-600 hover:text-indigo-800"
+            >
+              סגור
+            </button>
+          </div>
+          <ProgressTimeline
+            topic={selectedTopic.topic}
+            sessions={sessions}
+            currentMastery={selectedTopic}
+          />
+        </div>
+      )}
+
+      {/* Skill Radar Chart - only show if subject selected and profile exists */}
+      {analysisFilter !== 'all' && profile && (
+        <SkillRadarChart
+          profile={profile}
+          subjectId={analysisFilter}
+          subjectName={subjects.find(s => s.id === analysisFilter)?.name || analysisFilter}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Progress Chart */}
@@ -263,9 +299,10 @@ WeaknessesCard.displayName = 'WeaknessesCard';
 interface TopicMasteryCardProps {
   mastery: TopicMastery;
   subjectName: string;
+  onSelect?: () => void;  // Callback for drill-down to timeline
 }
 
-const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectName }) => {
+const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectName, onSelect }) => {
   const level = getMasteryLevel(mastery.pKnown);
   const percentage = Math.round(mastery.pKnown * 100);
 
@@ -305,7 +342,13 @@ const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectNa
   const trend = trendIcon[mastery.recentTrend];
 
   return (
-    <div className={`p-4 rounded-xl border ${config.bg} ${config.border}`}>
+    <div
+      className={`p-4 rounded-xl border ${config.bg} ${config.border} ${onSelect ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={onSelect}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onKeyDown={onSelect ? (e) => e.key === 'Enter' && onSelect() : undefined}
+    >
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <Icon size={18} className={config.text} />
@@ -404,6 +447,8 @@ interface TopicMasterySectionProps {
   profileConfidence: 'low' | 'medium' | 'high';
   subjects: { id: string; name: string }[];
   selectedSubject: string;
+  selectedTopic: TopicMastery | null;
+  setSelectedTopic: (topic: TopicMastery | null) => void;
 }
 
 const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
@@ -411,7 +456,9 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
   profileLoading,
   profileConfidence,
   subjects,
-  selectedSubject
+  selectedSubject,
+  selectedTopic,
+  setSelectedTopic
 }) => {
   if (profileLoading) {
     return (
@@ -504,6 +551,7 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
                     key={`${topic.subjectId}-${topic.topic}`}
                     mastery={topic}
                     subjectName={getSubjectName(topic.subjectId)}
+                    onSelect={() => setSelectedTopic(topic)}
                   />
                 ))}
               </div>
@@ -522,6 +570,7 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
                     key={`${topic.subjectId}-${topic.topic}`}
                     mastery={topic}
                     subjectName={getSubjectName(topic.subjectId)}
+                    onSelect={() => setSelectedTopic(topic)}
                   />
                 ))}
               </div>
@@ -540,6 +589,7 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
                     key={`${topic.subjectId}-${topic.topic}`}
                     mastery={topic}
                     subjectName={getSubjectName(topic.subjectId)}
+                    onSelect={() => setSelectedTopic(topic)}
                   />
                 ))}
               </div>
