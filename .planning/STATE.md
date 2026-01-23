@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 
 ## Current Position
 
-Phase: 2 of 5 (Profile-Aware Quiz Generation) — COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase complete, verified
-Last activity: 2026-01-22 — Phase 2 complete with gap fixes (8 commits)
+Phase: 3 of 5 (Recommendation Engine) — IN PROGRESS
+Plan: 1 of 4 in current phase
+Status: Core scoring engine complete
+Last activity: 2026-01-23 — Completed 03-01-PLAN.md (multi-factor scoring)
 
-Progress: [████████████████████] 100% (Phase 2)
+Progress: [██████████████████████░░] 88% (8/9 plans total across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 2.9 minutes
-- Total execution time: 0.34 hours
+- Total plans completed: 8
+- Average duration: 2.8 minutes
+- Total execution time: 0.37 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [████████████████████] 100% (P
 |-------|-------|-------|----------|
 | 01 - Profile Foundation | 4 | 10 min | 2.5 min |
 | 02 - Profile-Aware Quiz | 3 | 10 min | 3.3 min |
+| 03 - Recommendation Engine | 1 | 2 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-04 (4 min), 02-01 (2 min), 02-02 (4 min), 02-03 (4 min)
-- Trend: Consistent velocity
+- Last 5 plans: 02-01 (2 min), 02-02 (4 min), 02-03 (4 min), 03-01 (2 min)
+- Trend: Excellent velocity, stable 2-4 min per plan
 
 *Updated after each plan completion*
 
@@ -87,6 +88,12 @@ Key decisions affecting current work:
 - Final review mode uses static generation — Even topic coverage more appropriate than adaptive mixing
 - Weak/review topics get easy difficulty, learning gets medium — Scaffolding and review vs zone of proximal development
 
+**New from 03-01:**
+- 30/40/30 weight split favors urgency (upcoming tests) over mastery and goals — Time-sensitive deadlines are most actionable
+- Mastery score inverted with 95 cap — Low mastery = high priority, but cap prevents overwhelming child with too many weak topics
+- Balanced recommendation strategy (30% weakness, 40% growth, 30% maintenance) — Ensures variety, prevents all-weak or all-mastered lists
+- Override recording is fire-and-forget — Non-critical analytics shouldn't block user interactions
+
 ### Pending Todos
 
 None yet.
@@ -107,9 +114,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22
-Stopped at: Phase 2 complete, verified, ready for Phase 3
+Last session: 2026-01-23T09:00:21Z
+Stopped at: Completed 03-01-PLAN.md (Core Recommendation Engine)
 Resume file: None
 
 ---
-*Last updated: 2026-01-22*
+*Last updated: 2026-01-23*
