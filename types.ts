@@ -426,3 +426,89 @@ export const ADAPTIVE_QUIZ_CONSTANTS = {
   /** Questions to wait before unblocking topics */
   COOLDOWN_QUESTIONS: 3
 } as const;
+
+// ==========================================
+// RECOMMENDATION ENGINE TYPES (Phase 3)
+// ==========================================
+
+/**
+ * Parent-defined learning goal for a child
+ * Influences recommendation scoring
+ */
+export interface LearningGoal {
+  id: string;
+  childId: string;
+  familyId: string;
+  subjectId: string;           // Subject this goal belongs to
+  topic: string;               // From subject.topics dropdown
+  targetDate: number | null;   // Optional deadline timestamp
+  description: string;         // Parent's notes (not parsed)
+  createdAt: number;
+  createdBy: string;           // Parent UID
+}
+
+/**
+ * Scored topic from recommendation algorithm
+ */
+export interface TopicScore {
+  topic: string;
+  score: number;               // 0-100 composite score
+  masteryScore: number;        // 0-100 (lower mastery = higher score)
+  urgencyScore: number;        // 0-100 (upcoming tests boost score)
+  goalScore: number;           // 0-100 (matches parent goals)
+  confidence: 'low' | 'medium' | 'high';
+  reasoning: string[];         // Hebrew explanation strings
+}
+
+/**
+ * Final recommendation with priority and category
+ */
+export interface Recommendation {
+  topic: string;
+  priority: 'urgent' | 'important' | 'review';
+  score: number;
+  confidence: 'low' | 'medium' | 'high';
+  reasoning: string[];
+  category: 'weakness' | 'growth' | 'maintenance';
+}
+
+/**
+ * Reason for parent override
+ */
+export type OverrideReason =
+  | 'too_easy'
+  | 'too_hard'
+  | 'wrong_priority'
+  | 'other';
+
+/**
+ * Logged override for future calibration
+ */
+export interface RecommendationOverride {
+  id: string;
+  childId: string;
+  familyId: string;
+  parentId: string;
+  topic: string;
+  reason: OverrideReason;
+  customReason?: string;       // If reason === 'other'
+  timestamp: number;
+}
+
+/**
+ * Weights for multi-factor scoring
+ */
+export interface ScoringWeights {
+  mastery: number;             // Default: 0.30 (30%)
+  urgency: number;             // Default: 0.40 (40%)
+  goals: number;               // Default: 0.30 (30%)
+}
+
+/**
+ * Default scoring weights (30/40/30 split)
+ */
+export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
+  mastery: 0.30,
+  urgency: 0.40,
+  goals: 0.30
+};
