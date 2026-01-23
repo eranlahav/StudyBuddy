@@ -181,3 +181,12 @@ export {
   generateRecommendations,
   recordOverride
 } from './recommendationService';
+
+// Learning Goals (Phase 3)
+export {
+  addLearningGoal,
+  getLearningGoals,
+  getGoalsBySubject,
+  deleteLearningGoal,
+  subscribeToGoals
+} from './goalsService';
