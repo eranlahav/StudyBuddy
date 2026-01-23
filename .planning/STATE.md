@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 ## Current Position
 
 Phase: 4 of 5 (Multi-Signal Integration)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-23 — Completed 04-02-PLAN.md (Engagement Detector)
+Last activity: 2026-01-23 — Completed 04-03-PLAN.md (Signal Processors)
 
-Progress: [████████████████████████████░░] 86% (12/14 plans total across all phases)
+Progress: [█████████████████████████████░] 93% (13/14 plans total across all phases)
 
 ## Performance Metrics
 
@@ -123,6 +123,12 @@ Key decisions affecting current work:
 - Minimum 3 questions for engagement analysis — Too few questions gives unreliable signal
 - Hebrew reasoning strings for parent dashboard — Explains assessment in native language
 
+**New from 04-03:**
+- Strong topics from evaluations set to 90% pKnown — Teacher-validated mastery with room for verification
+- Weak topics from evaluations set to 30% pKnown — Substantial remediation needed
+- Parent note adjustments: -0.02 to -0.05 based on category — Conservative penalties match 40% base confidence
+- Engagement signal skips update when impact is zero — Avoid unnecessary writes for medium/high engagement
+
 ### Pending Todos
 
 None yet.
@@ -143,8 +149,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23T15:30:00Z
-Stopped at: Completed 04-02-PLAN.md (Engagement Detector)
+Last session: 2026-01-23T15:36:00Z
+Stopped at: Completed 04-03-PLAN.md (Signal Processors)
 Resume file: None
 
 ---
