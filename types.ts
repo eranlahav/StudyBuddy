@@ -326,6 +326,11 @@ export interface TopicMastery {
     category: ParentNoteCategory;
     timestamp: number;
   }>;
+
+  /** Next scheduled probe date (timestamp) */
+  nextProbeDate?: number;
+  /** Current probe interval in days (doubles on success) */
+  probeIntervalDays?: number;
 }
 
 /**
@@ -605,4 +610,27 @@ export interface FusedSignal {
   pKnown: number;
   confidence: number;
   dominantSignal: SignalType;
+}
+
+// ==========================================
+// REGRESSION ALERT TYPES (Phase 5)
+// ==========================================
+
+/**
+ * Alert for parent when child's mastery regresses
+ * Generated when pKnown drops from mastered (>=0.8) to below 0.7
+ */
+export interface RegressionAlert {
+  id: string;
+  childId: string;
+  childName: string;
+  topic: string;
+  subjectId: string;
+  subjectName: string;
+  previousPKnown: number;
+  currentPKnown: number;
+  message: string;              // Hebrew message for parent
+  timestamp: number;
+  dismissed: boolean;
+  lastAlertedAt?: number;       // For cooldown tracking
 }
