@@ -92,3 +92,12 @@ export {
   RECENCY_CONFIG,
   SAMPLE_SIZE_CONFIG
 } from './signalWeights';
+
+// Engagement Detection (Phase 4)
+export {
+  analyzeEngagement,
+  buildEngagementMetrics,
+  getEngagementLabel,
+  getEngagementColorClass,
+  ENGAGEMENT_CONFIG
+} from './engagementDetector';
