@@ -436,3 +436,218 @@ export async function processEvaluationSignal(
     }, error);
   }
 }
+
+/**
+ * Process engagement signal from quiz session
+ *
+ * Engagement modifies confidence, not mastery directly.
+ * Low engagement = lower confidence in existing estimate.
+ *
+ * Fire-and-forget: Errors logged but never thrown.
+ *
+ * @param childId - Child who completed the session
+ * @param familyId - Family ID for isolation
+ * @param topic - Topic the session covered
+ * @param subjectId - Subject ID
+ * @param metrics - Engagement metrics from session
+ * @param grade - Child's grade level
+ */
+export async function processEngagementSignal(
+  childId: string,
+  familyId: string,
+  topic: string,
+  subjectId: string,
+  metrics: EngagementMetrics,
+  grade: GradeLevel
+): Promise<void> {
+  try {
+    // Analyze engagement
+    const engagement = analyzeEngagement(metrics);
+
+    logger.info('signalService: Processing engagement signal', {
+      childId,
+      topic,
+      level: engagement.level,
+      impact: engagement.impactOnMastery
+    });
+
+    // Skip if no impact
+    if (engagement.impactOnMastery === 0) {
+      logger.debug('signalService: No engagement impact, skipping', { childId, topic });
+      return;
+    }
+
+    // Fetch profile
+    let profile = await getProfile(childId);
+    if (!profile) {
+      logger.warn('signalService: No profile for engagement signal, skipping', { childId });
+      return;
+    }
+
+    // Get or check topic mastery
+    const topicMastery = profile.topicMastery[topic];
+    if (!topicMastery) {
+      // No quiz data yet for this topic, skip engagement signal
+      logger.warn('signalService: No quiz data for topic, skipping engagement', {
+        childId,
+        topic
+      });
+      return;
+    }
+
+    // Apply engagement impact to pKnown
+    // Engagement modifies confidence, not mastery directly
+    // Low engagement = lower confidence in existing estimate
+    const adjustedPKnown = Math.max(0, Math.min(1,
+      topicMastery.pKnown + engagement.impactOnMastery
+    ));
+
+    profile.topicMastery[topic] = {
+      ...topicMastery,
+      pKnown: adjustedPKnown,
+      lastEngagementLevel: engagement.level
+    };
+
+    // Update profile
+    await retry(
+      () => updateProfile(childId, profile!),
+      { maxRetries: 1, context: 'processEngagementSignal' }
+    );
+
+    logger.info('signalService: Engagement signal processed', {
+      childId,
+      topic,
+      level: engagement.level,
+      oldPKnown: topicMastery.pKnown,
+      newPKnown: adjustedPKnown
+    });
+
+  } catch (error) {
+    // Fire-and-forget: Log but don't rethrow
+    logger.error('signalService: Engagement signal failed', {
+      childId,
+      topic
+    }, error);
+  }
+}
+
+/**
+ * Process parent note signal
+ *
+ * Parent notes provide qualitative context that modifies confidence.
+ * "Guessed correctly" lowers mastery slightly.
+ * "Struggled" indicates lower mastery than raw accuracy.
+ *
+ * Fire-and-forget: Errors logged but never thrown.
+ *
+ * @param note - Parent observation note
+ * @param questionCorrect - Whether the question was answered correctly
+ */
+export async function processParentNoteSignal(
+  note: ParentNote,
+  questionCorrect: boolean
+): Promise<void> {
+  try {
+    logger.info('signalService: Processing parent note', {
+      childId: note.childId,
+      topic: note.topic,
+      category: note.category
+    });
+
+    // Fetch profile
+    let profile = await getProfile(note.childId);
+    if (!profile) {
+      logger.warn('signalService: No profile for parent note, skipping', {
+        childId: note.childId
+      });
+      return;
+    }
+
+    // Get topic mastery
+    const topicMastery = profile.topicMastery[note.topic];
+    if (!topicMastery) {
+      logger.warn('signalService: No topic mastery for note, skipping', {
+        childId: note.childId,
+        topic: note.topic
+      });
+      return;
+    }
+
+    // Calculate adjustment based on note category + correctness
+    let adjustment = 0;
+
+    switch (note.category) {
+      case 'guessed':
+        // If guessed and correct, lower confidence in mastery
+        // If guessed and wrong, no adjustment (expected)
+        if (questionCorrect) {
+          adjustment = -0.02; // Small decrease
+          logger.debug('signalService: Guessed correct - lowering mastery', {
+            topic: note.topic,
+            adjustment
+          });
+        }
+        break;
+
+      case 'struggled':
+        // Struggled indicates lower mastery than raw accuracy suggests
+        adjustment = -0.03;
+        break;
+
+      case 'skipped_step':
+        // Skipped step: knows algorithm but execution shaky
+        adjustment = -0.02;
+        break;
+
+      case 'misunderstood':
+        // Misunderstood: fundamental gap
+        adjustment = -0.05;
+        break;
+
+      case 'other':
+        // No automatic adjustment for 'other' - just record the note
+        adjustment = 0;
+        break;
+    }
+
+    // Apply adjustment
+    const adjustedPKnown = Math.max(0, Math.min(1,
+      topicMastery.pKnown + adjustment
+    ));
+
+    // Store note reference for transparency
+    const parentNotes = topicMastery.parentNotes || [];
+    parentNotes.push({
+      noteId: note.id,
+      category: note.category,
+      timestamp: note.timestamp
+    });
+
+    profile.topicMastery[note.topic] = {
+      ...topicMastery,
+      pKnown: adjustedPKnown,
+      parentNotes
+    };
+
+    // Update profile
+    await retry(
+      () => updateProfile(note.childId, profile!),
+      { maxRetries: 1, context: 'processParentNoteSignal' }
+    );
+
+    logger.info('signalService: Parent note signal processed', {
+      childId: note.childId,
+      topic: note.topic,
+      category: note.category,
+      adjustment,
+      oldPKnown: topicMastery.pKnown,
+      newPKnown: adjustedPKnown
+    });
+
+  } catch (error) {
+    // Fire-and-forget: Log but don't rethrow
+    logger.error('signalService: Parent note signal failed', {
+      noteId: note.id
+    }, error);
+  }
+}
