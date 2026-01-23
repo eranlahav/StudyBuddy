@@ -125,15 +125,16 @@ Plans:
 6. Parent dashboard shows progress timeline (line chart of mastery over time)
 7. AI detects prerequisite relationships and shows "Fix X first, then Y will make sense" rationale
 
-**Plans**: 6 plans in 3 waves
+**Plans**: 7 plans in 3 waves
 
 Plans:
 - [ ] 05-01-PLAN.md — Forgetting curve library and type extensions (lib/forgettingCurve.ts, types.ts)
 - [ ] 05-02-PLAN.md — Alert service for regression detection (services/alertService.ts)
-- [ ] 05-03-PLAN.md — Probe scheduler and review mode (services/probeScheduler.ts, adaptiveQuizService.ts)
+- [ ] 05-03-PLAN.md — Probe scheduler, review mode, and useQuizSession wiring
 - [ ] 05-04-PLAN.md — AI prerequisite detection (services/prerequisiteService.ts)
 - [ ] 05-05-PLAN.md — Visualization components (SkillRadarChart.tsx, ProgressTimeline.tsx)
-- [ ] 05-06-PLAN.md — UI integration (profileService, useLearnerProfile, AnalysisTab extensions)
+- [ ] 05-06-PLAN.md — Service and hook integration (profileService, useLearnerProfile with notifications)
+- [ ] 05-07-PLAN.md — AnalysisTab UI integration (radar chart, timeline drill-down)
 
 ## Progress
 
@@ -146,7 +147,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Profile-Aware Quiz Generation | 3/3 | Complete | 2026-01-22 |
 | 3. Recommendation Engine | 4/4 | Complete | 2026-01-23 |
 | 4. Multi-Signal Integration | 4/4 | Complete | 2026-01-23 |
-| 5. Profile Maintenance & Visualization | 0/6 | Planned | - |
+| 5. Profile Maintenance & Visualization | 0/7 | Planned | - |
 
 ---
 *Last updated: 2026-01-23*
