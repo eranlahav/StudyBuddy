@@ -11,17 +11,17 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 ## Current Position
 
 Phase: 5 of 5 (Profile Maintenance & Visualization) - IN PROGRESS
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-23 — Completed 05-02-PLAN.md (Alert Service)
+Last activity: 2026-01-23 — Completed 05-01-PLAN.md (Forgetting Curve Foundation)
 
-Progress: [████████████████████████████████] 100% (15/18 plans total across all phases)
+Progress: [████████████████████████████████] 88% (16/18 plans total across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 2.3 minutes
+- Total plans completed: 16
+- Average duration: 2.25 minutes
 - Total execution time: 0.60 hours
 
 **By Phase:**
@@ -32,11 +32,11 @@ Progress: [███████████████████████
 | 02 - Profile-Aware Quiz | 3 | 10 min | 3.3 min |
 | 03 - Recommendation Engine | 4 | 8 min | 2.0 min |
 | 04 - Multi-Signal Integration | 4 | 7 min | 1.75 min |
-| 05 - Profile Maintenance | 2 | 2 min | 1.0 min |
+| 05 - Profile Maintenance | 3 | 4 min | 1.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (2 min), 04-02 (2 min), 04-03 (2 min), 04-04 (3 min), 05-02 (1 min)
-- Trend: Outstanding velocity, Phase 5 off to fast start
+- Last 5 plans: 04-02 (2 min), 04-03 (2 min), 04-04 (3 min), 05-02 (1 min), 05-01 (2 min)
+- Trend: Outstanding velocity maintained through Phase 5
 
 *Updated after each plan completion*
 
@@ -137,6 +137,12 @@ Key decisions affecting current work:
 - Evaluation signal after save — Only valid evaluations trigger profile updates
 - Multi-dimensional display — Signal source, engagement level, accuracy/speed/consistency in AnalysisTab
 
+**New from 05-01:**
+- Three-tier decay rates based on mastery level (95%/92%/88% weekly) — Strong knowledge decays slower than weak knowledge
+- 5% minimum pKnown floor to preserve residual knowledge — Complete forgetting is cognitively unrealistic
+- Immutable decay pattern (returns new objects, never mutates) — Decay is for visualization/recommendations, not profile updates
+- Global ENABLED toggle for forgetting curve — Allows A/B testing or disabling without code changes
+
 **New from 05-02:**
 - Regression threshold at 0.7 (70% confidence) — Below typical learning/mastery boundary, indicates significant concern
 - Mastery threshold at 0.8 (80%) for regression alerts — Only alert when truly mastered content regresses
@@ -161,14 +167,15 @@ None yet.
 - Signal weights (70/95/60/40) based on ITS research, may need tuning with real data
 - Engagement thresholds (30s per question, 70% completion) are initial estimates
 
-**Phase 5 Readiness:**
-- Forgetting curve decay rates (0.95-0.98/week) may need tuning after 30-60 days of data collection
+**Phase 5 In Progress:**
+- Forgetting curve decay rates (0.95/0.92/0.88/week) are research-based estimates, may need tuning after 30-60 days of data collection
+- Probe interval calibration for SM-2 algorithm (Plan 03) will require real user data
 - Prerequisite relationship accuracy unknown for Israeli curriculum variations
 
 ## Session Continuity
 
-Last session: 2026-01-23T18:22:59Z
-Stopped at: Completed 05-02-PLAN.md (Alert Service)
+Last session: 2026-01-23T18:23:54Z
+Stopped at: Completed 05-01-PLAN.md (Forgetting Curve Foundation)
 Resume file: None
 
 ---
