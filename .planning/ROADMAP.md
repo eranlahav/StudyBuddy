@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Profile Foundation** - Data collection schema and BKT algorithm implementation
 - [x] **Phase 2: Profile-Aware Quiz Generation** - Personalize questions based on learner profiles
 - [x] **Phase 3: Recommendation Engine** - AI-powered topic suggestions with parent control
-- [ ] **Phase 4: Multi-Signal Integration** - School tests and engagement tracking
+- [x] **Phase 4: Multi-Signal Integration** - School tests and engagement tracking
 - [ ] **Phase 5: Profile Maintenance & Visualization** - Forgetting curves, regression detection, analytics UI
 
 ## Phase Details
@@ -104,10 +104,10 @@ Plans:
 **Plans**: 4 plans in 3 waves
 
 Plans:
-- [ ] 04-01-PLAN.md — Signal types and confidence weights (types.ts, lib/signalWeights.ts)
-- [ ] 04-02-PLAN.md — Engagement detection module (lib/engagementDetector.ts)
-- [ ] 04-03-PLAN.md — Signal processors (services/signalService.ts extensions)
-- [ ] 04-04-PLAN.md — UI integration (useQuizSession, UploadEvaluationModal, AnalysisTab)
+- [x] 04-01-PLAN.md — Signal types and confidence weights (types.ts, lib/signalWeights.ts)
+- [x] 04-02-PLAN.md — Engagement detection module (lib/engagementDetector.ts)
+- [x] 04-03-PLAN.md — Signal processors (services/signalService.ts extensions)
+- [x] 04-04-PLAN.md — UI integration (useQuizSession, UploadEvaluationModal, AnalysisTab)
 
 ### Phase 5: Profile Maintenance & Visualization
 **Goal**: Profiles stay accurate over time with forgetting curves, regression detection, and comprehensive analytics UI
@@ -125,10 +125,15 @@ Plans:
 6. Parent dashboard shows progress timeline (line chart of mastery over time)
 7. AI detects prerequisite relationships and shows "Fix X first, then Y will make sense" rationale
 
-**Plans**: TBD
+**Plans**: 6 plans in 3 waves
 
 Plans:
-- [ ] TBD during planning
+- [ ] 05-01-PLAN.md — Forgetting curve library and type extensions (lib/forgettingCurve.ts, types.ts)
+- [ ] 05-02-PLAN.md — Alert service for regression detection (services/alertService.ts)
+- [ ] 05-03-PLAN.md — Probe scheduler and review mode (services/probeScheduler.ts, adaptiveQuizService.ts)
+- [ ] 05-04-PLAN.md — AI prerequisite detection (services/prerequisiteService.ts)
+- [ ] 05-05-PLAN.md — Visualization components (SkillRadarChart.tsx, ProgressTimeline.tsx)
+- [ ] 05-06-PLAN.md — UI integration (profileService, useLearnerProfile, AnalysisTab extensions)
 
 ## Progress
 
@@ -140,8 +145,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Profile Foundation | 4/4 | Complete | 2026-01-22 |
 | 2. Profile-Aware Quiz Generation | 3/3 | Complete | 2026-01-22 |
 | 3. Recommendation Engine | 4/4 | Complete | 2026-01-23 |
-| 4. Multi-Signal Integration | 0/4 | Ready | - |
-| 5. Profile Maintenance & Visualization | 0/TBD | Not started | - |
+| 4. Multi-Signal Integration | 4/4 | Complete | 2026-01-23 |
+| 5. Profile Maintenance & Visualization | 0/6 | Planned | - |
 
 ---
 *Last updated: 2026-01-23*
