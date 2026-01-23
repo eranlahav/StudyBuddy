@@ -12,7 +12,7 @@ import {
 import { Brain, CheckCircle, BookOpen, AlertTriangle, Clock, TrendingUp as TrendIcon, Info, Trophy, TrendingUp, AlertCircle } from 'lucide-react';
 import { AnalysisTabProps, AnalysisData, TopicPerformance } from './types';
 import { LearnerProfile, TopicMastery, getMasteryLevel, MasteryLevel } from '../../types';
-import { formatRelativeDay } from '../../lib';
+import { formatRelativeDay, getEngagementLabel, getEngagementColorClass } from '../../lib';
 import { getConfidenceMessage } from '../../hooks';
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -335,6 +335,52 @@ const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectNa
           />
         </div>
       </div>
+
+      {/* Signal source and engagement indicators */}
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        {/* Signal source indicator */}
+        {mastery.lastSignalType && (
+          <span className="text-xs text-gray-500">
+            {mastery.lastSignalType === 'evaluation' && '📄 מבחן'}
+            {mastery.lastSignalType === 'quiz' && '📝 תרגול'}
+            {mastery.lastSignalType === 'engagement' && '⏱️ מעורבות'}
+            {mastery.lastSignalType === 'parent_note' && '👨‍👩‍👧 הערה'}
+          </span>
+        )}
+        {/* Engagement level display */}
+        {mastery.lastEngagementLevel && (
+          <span className={`text-xs ${getEngagementColorClass(mastery.lastEngagementLevel)}`}>
+            {getEngagementLabel(mastery.lastEngagementLevel)}
+          </span>
+        )}
+      </div>
+
+      {/* Multi-dimensional metrics */}
+      {mastery.dimensions && (
+        <div className="mb-3 pt-2 border-t border-gray-100">
+          <div className="text-xs text-gray-600 grid grid-cols-3 gap-2">
+            <div>
+              <span className="text-gray-400">דיוק:</span>{' '}
+              {Math.round(mastery.dimensions.accuracy * 100)}%
+            </div>
+            <div>
+              <span className="text-gray-400">מהירות:</span>{' '}
+              {mastery.dimensions.speed >= 1 ? 'מהיר' : mastery.dimensions.speed >= 0.7 ? 'נורמלי' : 'איטי'}
+            </div>
+            <div>
+              <span className="text-gray-400">עקביות:</span>{' '}
+              {Math.round(mastery.dimensions.consistency * 100)}%
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Parent notes count */}
+      {mastery.parentNotes && mastery.parentNotes.length > 0 && (
+        <div className="text-xs text-purple-600 mb-2">
+          👨‍👩‍👧 {mastery.parentNotes.length} הערות הורים
+        </div>
+      )}
 
       {/* Stats */}
       <div className="flex justify-between text-xs text-gray-500">
