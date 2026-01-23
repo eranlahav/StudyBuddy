@@ -20,6 +20,7 @@ import {
 import { TabType } from './types';
 import { TabSkeleton } from '../../components/LoadingSkeleton';
 import { useLearnerProfile } from '../../hooks';
+import { AlertNotificationBanner } from './AlertNotificationBanner';
 
 // Lazy-loaded tab components for code-splitting
 const AnalysisTab = lazy(() => import('./AnalysisTab').then(m => ({ default: m.AnalysisTab })));
@@ -58,11 +59,14 @@ export const ChildDetails: React.FC = () => {
 
   // Get learner profile with auto-bootstrap for existing children
   // Pass full child object (not just id) so hook can access familyId and grade for bootstrap
+  // Pass subjects for regression alert message formatting
   const {
     profile,
     isLoading: profileLoading,
-    getConfidenceLevel
-  } = useLearnerProfile(child, childSessions);
+    getConfidenceLevel,
+    activeNotification,
+    dismissNotification
+  } = useLearnerProfile(child, childSessions, subjects);
 
   if (!child) {
     return <div className="p-8">Child not found</div>;
@@ -72,6 +76,12 @@ export const ChildDetails: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       {/* Header Profile */}
       <ProfileHeader child={child} />
+
+      {/* Regression Alert Notification */}
+      <AlertNotificationBanner
+        alert={activeNotification}
+        onDismiss={dismissNotification}
+      />
 
       {/* Tab Navigation */}
       <TabNavigation
