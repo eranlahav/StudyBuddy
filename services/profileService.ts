@@ -18,19 +18,20 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { LearnerProfile } from '../types';
-import { logger, DatabaseError } from '../lib';
-import { TEST_LEARNER_PROFILES, isTestKid } from '../constants/testKids';
+import { logger, DatabaseError, applyForgettingCurveToProfile } from '../lib';
+import { isTestKid } from '../constants/testKids';
+import { getTestProfile, updateTestProfile } from './testKidsStorage';
 
 /**
  * Get learner profile for a child
  * Returns null if profile doesn't exist yet (lazy initialization)
- * Returns mock profile for test kids (no Firestore access)
+ * Returns profile from localStorage for test kids (no Firestore access)
  */
 export async function getProfile(childId: string): Promise<LearnerProfile | null> {
-  // Return mock profile for test kids
+  // Return profile from localStorage for test kids
   if (isTestKid(childId)) {
-    logger.debug('profileService: Returning mock profile for test kid', { childId });
-    return TEST_LEARNER_PROFILES[childId] || null;
+    logger.debug('profileService: Getting profile from localStorage for test kid', { childId });
+    return getTestProfile(childId);
   }
 
   try {
@@ -52,15 +53,16 @@ export async function getProfile(childId: string): Promise<LearnerProfile | null
 /**
  * Update or create learner profile
  * Uses merge:true to support partial updates
- * Silently skips updates for test kids (read-only mock data)
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function updateProfile(
   childId: string,
   profile: LearnerProfile
 ): Promise<void> {
-  // Silently skip updates for test kids (mock data is read-only)
+  // Write to localStorage for test kids
   if (isTestKid(childId)) {
-    logger.debug('profileService: Skipping update for test kid', { childId });
+    logger.debug('profileService: Writing to localStorage for test kid', { childId });
+    updateTestProfile(childId, profile);
     return;
   }
 
@@ -86,18 +88,18 @@ export async function updateProfile(
 /**
  * Subscribe to profile changes
  * Real-time updates for dashboard display
- * For test kids, returns mock data immediately (no Firestore subscription)
+ * For test kids, returns localStorage data immediately (no Firestore subscription)
  */
 export function subscribeToProfile(
   childId: string,
   onData: (profile: LearnerProfile | null) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  // For test kids, return mock data immediately with no-op unsubscribe
+  // For test kids, return localStorage data immediately with no-op unsubscribe
   if (isTestKid(childId)) {
-    const mockProfile = TEST_LEARNER_PROFILES[childId] || null;
-    logger.debug('profileService: Returning mock subscription for test kid', { childId });
-    onData(mockProfile);
+    const profile = getTestProfile(childId);
+    logger.debug('profileService: Returning localStorage subscription for test kid', { childId });
+    onData(profile);
     return () => {}; // No-op unsubscribe
   }
 
@@ -133,4 +135,31 @@ export function initializeProfile(childId: string, familyId: string): LearnerPro
     lastUpdated: Date.now(),
     version: 1
   };
+}
+
+/**
+ * Get learner profile with forgetting curve decay applied
+ *
+ * Wrapper around getProfile that automatically applies time-based
+ * mastery decay to all topics. Use this for:
+ * - Recommendation scoring (shows current effective mastery)
+ * - Dashboard display (reflects knowledge decay over time)
+ *
+ * Do NOT use for profile updates - decay is read-only visualization.
+ *
+ * @param childId - Child ID to get profile for
+ * @returns Profile with decayed pKnown values, or null if no profile
+ *
+ * @example
+ * const decayedProfile = await getProfileWithDecay(childId);
+ * // decayedProfile.topicMastery shows time-adjusted mastery levels
+ */
+export async function getProfileWithDecay(childId: string): Promise<LearnerProfile | null> {
+  const profile = await getProfile(childId);
+
+  if (!profile) {
+    return null;
+  }
+
+  return applyForgettingCurveToProfile(profile);
 }

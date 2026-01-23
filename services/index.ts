@@ -156,6 +156,7 @@ export type { FamilyStats, ChildStats } from './statsService';
 // Profile & Learning Signals
 export {
   getProfile,
+  getProfileWithDecay,
   updateProfile,
   subscribeToProfile,
   initializeProfile
