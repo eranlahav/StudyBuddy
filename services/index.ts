@@ -199,3 +199,19 @@ export {
   formatAlertMessage,
   ALERT_CONFIG
 } from './alertService';
+
+// Probe Scheduler (Phase 5)
+export {
+  needsProbeQuestion,
+  scheduleNextProbe,
+  processProbeResult,
+  PROBE_CONFIG
+} from './probeScheduler';
+export type { ProbeResult } from './probeScheduler';
+
+// Prerequisite Detection (Phase 5)
+export {
+  detectPrerequisites,
+  getPrerequisiteMessage
+} from './prerequisiteService';
+export type { PrerequisiteRelationship } from './prerequisiteService';
