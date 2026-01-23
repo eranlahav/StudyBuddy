@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 ## Current Position
 
 Phase: 3 of 5 (Recommendation Engine) — IN PROGRESS
-Plan: 1 of 4 in current phase
-Status: Core scoring engine complete
-Last activity: 2026-01-23 — Completed 03-01-PLAN.md (multi-factor scoring)
+Plan: 2 of 4 in current phase
+Status: Goals service complete
+Last activity: 2026-01-23 — Completed 03-02-PLAN.md (learning goals CRUD)
 
-Progress: [██████████████████████░░] 88% (8/9 plans total across all phases)
+Progress: [███████████████████████░] 100% (9/9 plans total across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 2.8 minutes
-- Total execution time: 0.37 hours
+- Total plans completed: 9
+- Average duration: 2.6 minutes
+- Total execution time: 0.39 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [██████████████████████░
 |-------|-------|-------|----------|
 | 01 - Profile Foundation | 4 | 10 min | 2.5 min |
 | 02 - Profile-Aware Quiz | 3 | 10 min | 3.3 min |
-| 03 - Recommendation Engine | 1 | 2 min | 2.0 min |
+| 03 - Recommendation Engine | 2 | 3 min | 1.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2 min), 02-02 (4 min), 02-03 (4 min), 03-01 (2 min)
-- Trend: Excellent velocity, stable 2-4 min per plan
+- Last 5 plans: 02-02 (4 min), 02-03 (4 min), 03-01 (2 min), 03-02 (1 min)
+- Trend: Excellent velocity, Phase 3 showing sub-2-min average
 
 *Updated after each plan completion*
 
@@ -94,6 +94,11 @@ Key decisions affecting current work:
 - Balanced recommendation strategy (30% weakness, 40% growth, 30% maintenance) — Ensures variety, prevents all-weak or all-mastered lists
 - Override recording is fire-and-forget — Non-critical analytics shouldn't block user interactions
 
+**New from 03-02:**
+- Optional targetDate for learning goals (null allowed) — Some goals are aspirational without hard deadlines
+- getGoalsBySubject separate query — Enables pre-filtering in UI dropdowns for better UX
+- Real-time goals subscription — Parents can add/edit goals in one tab, recommendations update immediately
+
 ### Pending Todos
 
 None yet.
@@ -114,8 +119,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23T09:00:21Z
-Stopped at: Completed 03-01-PLAN.md (Core Recommendation Engine)
+Last session: 2026-01-23T06:24:06Z
+Stopped at: Completed 03-02-PLAN.md (Learning Goals Service)
 Resume file: None
 
 ---
