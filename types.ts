@@ -305,10 +305,27 @@ export interface TopicMastery {
   firstAttempt: number;
   lastAttempt: number;
 
-  // Extensible (Phase 4+)
-  speed?: number;              // Optional: questions/minute
-  consistency?: number;        // Optional: 1 - variance
-  questionTypeBreakdown?: Record<string, number>;  // Optional
+  // Multi-dimensional tracking (Phase 4+)
+  dimensions?: {
+    accuracy: number;           // 0-1, raw correct rate
+    speed: number;              // 0-1, relative to expected (1.0 = on pace)
+    consistency: number;        // 0-1, 1 - variance across attempts
+  };
+
+  questionTypeBreakdown?: {
+    multiple_choice?: number;    // pKnown for MC questions
+    word_problems?: number;      // pKnown for word problems
+    calculations?: number;       // pKnown for pure calculations
+  };
+
+  lastSignalType?: SignalType;
+  lastEngagementLevel?: EngagementSignal['level'];
+
+  parentNotes?: Array<{
+    noteId: string;
+    category: ParentNoteCategory;
+    timestamp: number;
+  }>;
 }
 
 /**
@@ -512,3 +529,80 @@ export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
   urgency: 0.40,
   goals: 0.30
 };
+
+// ==========================================
+// MULTI-SIGNAL INTEGRATION TYPES (Phase 4)
+// ==========================================
+
+/**
+ * Signal source type for profile updates
+ * Each type has different confidence weighting
+ */
+export type SignalType = 'quiz' | 'evaluation' | 'engagement' | 'parent_note';
+
+/**
+ * A learning signal from any source
+ * Used for confidence-weighted Bayesian fusion
+ */
+export interface Signal {
+  type: SignalType;
+  pKnown: number;           // Estimated mastery from this signal (0-1)
+  confidence: number;       // Base confidence (0-1), before recency/sample adjustments
+  recency: number;          // Days ago (0 = today)
+  sampleSize: number;       // Questions/data points behind estimate
+}
+
+/**
+ * Engagement metrics captured during quiz session
+ * Used to detect avoidance and low-effort patterns
+ */
+export interface EngagementMetrics {
+  sessionDuration: number;        // Milliseconds spent in session
+  questionsAnswered: number;      // Total answered
+  questionsAvailable: number;     // Total loaded
+  completionRate: number;         // 0-1, answered/available
+  averageTimePerQuestion: number; // Milliseconds
+  earlyExitDetected: boolean;     // Left before finishing
+  rushingDetected: boolean;       // Answered too fast across all questions
+}
+
+/**
+ * Engagement analysis result
+ */
+export interface EngagementSignal {
+  level: 'high' | 'medium' | 'low' | 'avoidance';
+  confidence: number;              // 0-1
+  reasoning: string[];             // Hebrew explanation strings
+  impactOnMastery: number;        // -0.1 to 0.1 adjustment to pKnown
+}
+
+/**
+ * Category for parent observation notes
+ */
+export type ParentNoteCategory = 'guessed' | 'struggled' | 'skipped_step' | 'misunderstood' | 'other';
+
+/**
+ * Parent observation note during quiz review
+ * Provides qualitative context for profile adjustments
+ */
+export interface ParentNote {
+  id: string;
+  childId: string;
+  familyId: string;
+  parentId: string;
+  sessionId: string;        // Which quiz session
+  questionIndex: number;    // Which question (0-based)
+  topic: string;
+  note: string;             // Free-form parent observation
+  category: ParentNoteCategory;
+  timestamp: number;
+}
+
+/**
+ * Result of fusing multiple signals
+ */
+export interface FusedSignal {
+  pKnown: number;
+  confidence: number;
+  dominantSignal: SignalType;
+}
