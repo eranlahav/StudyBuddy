@@ -18,8 +18,7 @@ import {
   ChildProfile,
   Subject,
   LearningGoal,
-  OverrideReason,
-  UpcomingTest
+  OverrideReason
 } from '../types';
 import { useLearnerProfile } from './useLearnerProfile';
 import { useStore } from '../store';
@@ -170,7 +169,7 @@ export function useRecommendations(
         topic,
         reason,
         customReason
-      ).catch(err => {
+      ).catch(() => {
         // Error already logged in recommendationService
         // Swallow here - override tracking failure shouldn't disrupt UI
         logger.warn('useRecommendations: Override recording failed (non-blocking)', {
