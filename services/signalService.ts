@@ -8,8 +8,30 @@
  * Errors are logged but don't break the quiz flow.
  */
 
-import { StudySession, TopicMastery, LearnerProfile, ChildProfile, GradeLevel } from '../types';
-import { updateBKT, getBKTParams, calculateTrend, logger, ProfileUpdateError, retry } from '../lib';
+import {
+  StudySession,
+  TopicMastery,
+  LearnerProfile,
+  ChildProfile,
+  GradeLevel,
+  Evaluation,
+  EngagementMetrics,
+  ParentNote,
+  Signal,
+  SignalType
+} from '../types';
+import {
+  updateBKT,
+  getBKTParams,
+  calculateTrend,
+  logger,
+  ProfileUpdateError,
+  retry,
+  fuseSignals,
+  daysSince,
+  getBaseConfidence,
+  analyzeEngagement
+} from '../lib';
 import { getProfile, updateProfile, initializeProfile } from './profileService';
 
 /**
@@ -35,6 +57,68 @@ function extractTopicPerformance(session: StudySession): Record<string, {
   });
 
   return topicPerf;
+}
+
+/**
+ * Create a Signal from existing TopicMastery data
+ * Used as the "prior" when fusing with new signals
+ */
+function createSignalFromMastery(
+  mastery: TopicMastery,
+  defaultType: SignalType = 'quiz'
+): Signal {
+  return {
+    type: mastery.lastSignalType || defaultType,
+    pKnown: mastery.pKnown,
+    confidence: getBaseConfidence(mastery.lastSignalType || defaultType),
+    recency: daysSince(mastery.lastAttempt),
+    sampleSize: mastery.attempts
+  };
+}
+
+/**
+ * Update topic mastery by fusing existing data with new signal
+ * Uses confidence-weighted Bayesian fusion
+ */
+function fuseTopicWithSignal(
+  existing: TopicMastery | undefined,
+  topic: string,
+  subjectId: string,
+  newSignal: Signal,
+  grade: GradeLevel
+): TopicMastery {
+  const params = getBKTParams(grade);
+
+  // Initialize if first time seeing this topic
+  if (!existing) {
+    return {
+      topic,
+      subjectId,
+      pKnown: newSignal.pKnown,
+      attempts: newSignal.sampleSize,
+      correctCount: Math.round(newSignal.pKnown * newSignal.sampleSize),
+      incorrectCount: Math.round((1 - newSignal.pKnown) * newSignal.sampleSize),
+      averageTime: 0,
+      recentTrend: 'stable',
+      performanceWindow: [],
+      firstAttempt: Date.now(),
+      lastAttempt: Date.now(),
+      lastSignalType: newSignal.type
+    };
+  }
+
+  // Create signal from existing mastery
+  const existingSignal = createSignalFromMastery(existing);
+
+  // Fuse signals
+  const fused = fuseSignals([existingSignal, newSignal]);
+
+  return {
+    ...existing,
+    pKnown: fused.pKnown,
+    lastAttempt: Date.now(),
+    lastSignalType: fused.dominantSignal
+  };
 }
 
 /**
