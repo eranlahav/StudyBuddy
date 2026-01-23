@@ -166,13 +166,17 @@ export {
   bootstrapProfile
 } from './signalService';
 
-// Adaptive Quiz (Phase 2)
+// Adaptive Quiz (Phase 2) + Review Mode (Phase 5)
 export {
   classifyTopics,
   mixDifficulty,
   orderTopics,
   getOrderedTopics,
-  hasProfileData
+  hasProfileData,
+  shouldEnterReviewMode,
+  selectReviewTopics,
+  selectProbeTopics,
+  REVIEW_MODE_CONFIG
 } from './adaptiveQuizService';
 
 // Recommendation Engine (Phase 3)
