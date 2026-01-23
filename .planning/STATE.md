@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 ## Current Position
 
 Phase: 5 of 5 (Profile Maintenance & Visualization) - COMPLETE
-Plan: 5 of 5 in current phase
+Plan: 6 of 6 in current phase
 Status: Complete
-Last activity: 2026-01-23 — Completed 05-05-PLAN.md (Visualization Charts)
+Last activity: 2026-01-23 — Completed 05-06-PLAN.md (Decay & Alert Wiring)
 
-Progress: [████████████████████████████████] 100% (18/18 plans total across all phases)
+Progress: [████████████████████████████████] 100% (19/19 plans total across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 2.28 minutes
-- Total execution time: 0.68 hours
+- Total plans completed: 19
+- Average duration: 2.26 minutes
+- Total execution time: 0.72 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [███████████████████████
 | 02 - Profile-Aware Quiz | 3 | 10 min | 3.3 min |
 | 03 - Recommendation Engine | 4 | 8 min | 2.0 min |
 | 04 - Multi-Signal Integration | 4 | 7 min | 1.75 min |
-| 05 - Profile Maintenance | 5 | 9 min | 1.8 min |
+| 05 - Profile Maintenance | 6 | 12 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-04 (3 min), 05-02 (1 min), 05-01 (2 min), 05-04 (2 min), 05-05 (3 min)
+- Last 5 plans: 05-02 (1 min), 05-01 (2 min), 05-04 (2 min), 05-05 (3 min), 05-06 (3 min)
 - Trend: Outstanding velocity maintained - ALL PHASES COMPLETE
 
 *Updated after each plan completion*
@@ -169,6 +169,12 @@ Key decisions affecting current work:
 - Session accuracy as historical mastery proxy — pKnown snapshots not stored (future enhancement)
 - RTL tooltip and legend configuration for recharts — Proper Hebrew support
 
+**New from 05-06:**
+- decayedProfile computed via useMemo in hook — Auto-updates when profile changes without manual refresh
+- 8 second auto-dismiss timeout for notifications — Balance between visibility and non-intrusiveness
+- Subjects passed to useLearnerProfile — Enable subject name lookup for alert messages
+- getProfileWithDecay wrapper in profileService — Read-only decay for recommendations/display
+
 ### Pending Todos
 
 None yet.
@@ -195,8 +201,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23T18:41:00Z
-Stopped at: Completed 05-05-PLAN.md (Visualization Charts) - ALL PHASES COMPLETE
+Last session: 2026-01-23T19:00:00Z
+Stopped at: Completed 05-06-PLAN.md (Decay & Alert Wiring) - ALL PHASES COMPLETE
 Resume file: None
 
 ---
