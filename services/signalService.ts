@@ -301,3 +301,138 @@ export async function bootstrapProfile(
 
   return profile;
 }
+
+/**
+ * Process school evaluation signal and update profile
+ *
+ * Evaluation signals carry highest weight (95% confidence).
+ * Teacher assessments dominate over quiz-based estimates.
+ *
+ * Fire-and-forget: Errors logged but never thrown (profile updates are non-blocking).
+ *
+ * @param evaluation - School evaluation with extracted topics
+ * @param child - Child profile (needed for grade level)
+ */
+export async function processEvaluationSignal(
+  evaluation: Evaluation,
+  child: ChildProfile
+): Promise<void> {
+  try {
+    logger.info('signalService: Processing evaluation signal', {
+      evaluationId: evaluation.id,
+      childId: evaluation.childId,
+      testName: evaluation.testName,
+      weakTopics: evaluation.weakTopics.length,
+      strongTopics: evaluation.strongTopics.length
+    });
+
+    // 1. Fetch or initialize profile
+    let profile = await getProfile(evaluation.childId);
+
+    if (!profile) {
+      profile = initializeProfile(evaluation.childId, evaluation.familyId);
+      logger.info('signalService: Initializing profile from evaluation', {
+        childId: evaluation.childId
+      });
+    }
+
+    const daysAgo = daysSince(evaluation.date);
+
+    // 2. Process strong topics (teacher-marked as mastered)
+    for (const topic of evaluation.strongTopics) {
+      const evaluationSignal: Signal = {
+        type: 'evaluation',
+        pKnown: 0.90,        // Strong = 90% mastery
+        confidence: 0.95,     // High confidence (teacher assessment)
+        recency: daysAgo,
+        sampleSize: evaluation.questions?.filter(q => q.topic === topic).length || 5
+      };
+
+      profile.topicMastery[topic] = fuseTopicWithSignal(
+        profile.topicMastery[topic],
+        topic,
+        evaluation.subject,
+        evaluationSignal,
+        child.grade
+      );
+    }
+
+    // 3. Process weak topics (teacher-marked as needing work)
+    for (const topic of evaluation.weakTopics) {
+      const evaluationSignal: Signal = {
+        type: 'evaluation',
+        pKnown: 0.30,        // Weak = 30% mastery
+        confidence: 0.95,
+        recency: daysAgo,
+        sampleSize: evaluation.questions?.filter(q => q.topic === topic).length || 5
+      };
+
+      profile.topicMastery[topic] = fuseTopicWithSignal(
+        profile.topicMastery[topic],
+        topic,
+        evaluation.subject,
+        evaluationSignal,
+        child.grade
+      );
+    }
+
+    // 4. Process individual questions if available (more granular)
+    if (evaluation.questions && evaluation.questions.length > 0) {
+      const topicQuestions: Record<string, { correct: number; total: number }> = {};
+
+      for (const q of evaluation.questions) {
+        const topic = q.topic || 'general';
+        if (!topicQuestions[topic]) {
+          topicQuestions[topic] = { correct: 0, total: 0 };
+        }
+        topicQuestions[topic].total++;
+        if (q.isCorrect) {
+          topicQuestions[topic].correct++;
+        }
+      }
+
+      // Create signals from per-topic performance
+      for (const [topic, perf] of Object.entries(topicQuestions)) {
+        // Skip if already processed via weak/strong topics
+        if (evaluation.weakTopics.includes(topic) || evaluation.strongTopics.includes(topic)) {
+          continue;
+        }
+
+        const accuracy = perf.correct / perf.total;
+        const evaluationSignal: Signal = {
+          type: 'evaluation',
+          pKnown: accuracy,
+          confidence: 0.95,
+          recency: daysAgo,
+          sampleSize: perf.total
+        };
+
+        profile.topicMastery[topic] = fuseTopicWithSignal(
+          profile.topicMastery[topic],
+          topic,
+          evaluation.subject,
+          evaluationSignal,
+          child.grade
+        );
+      }
+    }
+
+    // 5. Persist with retry (fire-and-forget pattern)
+    await retry(
+      () => updateProfile(evaluation.childId, profile!),
+      { maxRetries: 2, context: 'processEvaluationSignal' }
+    );
+
+    logger.info('signalService: Evaluation signal processed', {
+      evaluationId: evaluation.id,
+      topicsUpdated: evaluation.strongTopics.length + evaluation.weakTopics.length
+    });
+
+  } catch (error) {
+    // Fire-and-forget: Log but don't rethrow
+    logger.error('signalService: Evaluation signal processing failed', {
+      evaluationId: evaluation.id,
+      childId: evaluation.childId
+    }, error);
+  }
+}
