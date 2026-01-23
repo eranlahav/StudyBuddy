@@ -17,8 +17,12 @@ import {
   AlertTriangle,
   Plus,
   Trash2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
+import { EvaluationSummary } from './EvaluationSummary';
+import { RawOcrModal } from './RawOcrModal';
 import {
   Evaluation,
   EvaluationType,
@@ -34,6 +38,7 @@ import {
   analyzeEvaluationDocument
 } from '../../services';
 import { generateId } from '../../lib';
+import { processEvaluationSignal } from '../../services/signalService';
 import type { EvaluationAnalysisResult } from '../../services';
 
 interface UploadEvaluationModalProps {
@@ -97,6 +102,8 @@ export const UploadEvaluationModal: React.FC<UploadEvaluationModalProps> = ({
   });
 
   const [newWeakTopic, setNewWeakTopic] = useState('');
+  const [showRawOcrModal, setShowRawOcrModal] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle file selection
@@ -261,6 +268,11 @@ export const UploadEvaluationModal: React.FC<UploadEvaluationModalProps> = ({
 
       await onSave(evaluation);
 
+      // Fire profile signal (fire-and-forget)
+      processEvaluationSignal(evaluation as Evaluation, child).catch(() => {
+        // Silently ignore - fire-and-forget pattern
+      });
+
       // Add weak topics to study plan if requested
       if (formData.addWeakTopicsToStudyPlan && formData.weakTopics.length > 0 && formData.subjectId) {
         await onAddWeakTopics(formData.weakTopics, formData.subjectId);
@@ -298,6 +310,8 @@ export const UploadEvaluationModal: React.FC<UploadEvaluationModalProps> = ({
       addWeakTopicsToStudyPlan: true
     });
     setNewWeakTopic('');
+    setShowRawOcrModal(false);
+    setShowEditForm(false);
   };
 
   // Add weak topic
@@ -435,7 +449,7 @@ export const UploadEvaluationModal: React.FC<UploadEvaluationModalProps> = ({
           )}
 
           {/* Step 3: Review */}
-          {step === 'review' && (
+          {step === 'review' && analysisResult && (
             <div className="space-y-6">
               {/* Success message */}
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
@@ -445,8 +459,32 @@ export const UploadEvaluationModal: React.FC<UploadEvaluationModalProps> = ({
                 </span>
               </div>
 
-              {/* Form */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Summary Panel */}
+              <EvaluationSummary
+                analysisResult={analysisResult}
+                formData={formData}
+                subjectName={subjects.find(s => s.id === formData.subjectId)?.name}
+                onShowRawText={() => setShowRawOcrModal(true)}
+              />
+
+              {/* Collapsible Edit Form */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <button
+                  onClick={() => setShowEditForm(!showEditForm)}
+                  className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <span className="font-medium text-gray-700">עריכת פרטים</span>
+                  {showEditForm ? (
+                    <ChevronUp size={20} className="text-gray-400" />
+                  ) : (
+                    <ChevronDown size={20} className="text-gray-400" />
+                  )}
+                </button>
+
+                {showEditForm && (
+                  <div className="p-4 pt-0 space-y-4 border-t border-gray-100">
+                    {/* Form */}
+                    <div className="grid grid-cols-2 gap-4">
                 {/* Test Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -624,17 +662,20 @@ export const UploadEvaluationModal: React.FC<UploadEvaluationModalProps> = ({
               </div>
 
               {/* Teacher Comments */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  הערות המורה
-                </label>
-                <textarea
-                  value={formData.teacherComments}
-                  onChange={(e) => setFormData(prev => ({ ...prev, teacherComments: e.target.value }))}
-                  className="w-full p-2 border border-gray-300 rounded-lg"
-                  rows={3}
-                  placeholder="הערות או משוב מהמורה..."
-                />
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        הערות המורה
+                      </label>
+                      <textarea
+                        value={formData.teacherComments}
+                        onChange={(e) => setFormData(prev => ({ ...prev, teacherComments: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded-lg"
+                        rows={3}
+                        placeholder="הערות או משוב מהמורה..."
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Error */}
@@ -670,6 +711,14 @@ export const UploadEvaluationModal: React.FC<UploadEvaluationModalProps> = ({
                   )}
                 </button>
               </div>
+
+              {/* Raw OCR Modal */}
+              <RawOcrModal
+                isOpen={showRawOcrModal}
+                onClose={() => setShowRawOcrModal(false)}
+                rawText={analysisResult.rawText}
+                confidence={analysisResult.confidence}
+              />
             </div>
           )}
         </div>
