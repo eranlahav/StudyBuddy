@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Profile Foundation** - Data collection schema and BKT algorithm implementation
 - [x] **Phase 2: Profile-Aware Quiz Generation** - Personalize questions based on learner profiles
-- [ ] **Phase 3: Recommendation Engine** - AI-powered topic suggestions with parent control
+- [x] **Phase 3: Recommendation Engine** - AI-powered topic suggestions with parent control
 - [ ] **Phase 4: Multi-Signal Integration** - School tests and engagement tracking
 - [ ] **Phase 5: Profile Maintenance & Visualization** - Forgetting curves, regression detection, analytics UI
 
@@ -81,10 +81,10 @@ Plans:
 **Plans**: 4 plans in 3 waves
 
 Plans:
-- [ ] 03-01-PLAN.md — Core types and scoring service (types.ts, recommendationService.ts)
-- [ ] 03-02-PLAN.md — Goals service (Firestore CRUD for learning goals)
-- [ ] 03-03-PLAN.md — useRecommendations hook (orchestration)
-- [ ] 03-04-PLAN.md — UI components (RecommendationsPanel, RecommendationCard, OverrideModal, GoalForm)
+- [x] 03-01-PLAN.md — Core types and scoring service (types.ts, recommendationService.ts)
+- [x] 03-02-PLAN.md — Goals service (Firestore CRUD for learning goals)
+- [x] 03-03-PLAN.md — useRecommendations hook (orchestration)
+- [x] 03-04-PLAN.md — UI components (RecommendationsPanel, RecommendationCard, OverrideModal, GoalForm)
 
 ### Phase 4: Multi-Signal Integration
 **Goal**: Profile learns from school tests and engagement patterns, not just quiz performance
@@ -101,10 +101,13 @@ Plans:
 5. Parent notes added during quiz ("she guessed on #3") feed into profile confidence calculations
 6. Topic mastery displays multiple dimensions: accuracy, speed, consistency, question type breakdown
 
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
 
 Plans:
-- [ ] TBD during planning
+- [ ] 04-01-PLAN.md — Signal types and confidence weights (types.ts, lib/signalWeights.ts)
+- [ ] 04-02-PLAN.md — Engagement detection module (lib/engagementDetector.ts)
+- [ ] 04-03-PLAN.md — Signal processors (services/signalService.ts extensions)
+- [ ] 04-04-PLAN.md — UI integration (useQuizSession, UploadEvaluationModal, AnalysisTab)
 
 ### Phase 5: Profile Maintenance & Visualization
 **Goal**: Profiles stay accurate over time with forgetting curves, regression detection, and comprehensive analytics UI
@@ -136,8 +139,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Profile Foundation | 4/4 | Complete | 2026-01-22 |
 | 2. Profile-Aware Quiz Generation | 3/3 | Complete | 2026-01-22 |
-| 3. Recommendation Engine | 0/4 | Planned | - |
-| 4. Multi-Signal Integration | 0/TBD | Not started | - |
+| 3. Recommendation Engine | 4/4 | Complete | 2026-01-23 |
+| 4. Multi-Signal Integration | 0/4 | Ready | - |
 | 5. Profile Maintenance & Visualization | 0/TBD | Not started | - |
 
 ---
