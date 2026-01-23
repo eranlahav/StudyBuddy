@@ -16,8 +16,11 @@ import { formatRelativeDay, getEngagementLabel, getEngagementColorClass } from '
 import { getConfidenceMessage } from '../../hooks';
 import { SkillRadarChart } from './SkillRadarChart';
 import { ProgressTimeline } from './ProgressTimeline';
+import { ReviewModeBanner } from './ReviewModeBanner';
+import { shouldEnterReviewMode } from '../../services/adaptiveQuizService';
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
+  child,
   subjects,
   sessions,
   profile,
@@ -82,8 +85,21 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
     return { progressData, strongTopics, weakTopics, overallAverage, allTopics };
   }, [sessions, subjects, analysisFilter]);
 
+  // Detect if child would be in review mode (3+ week gap)
+  const lastSessionTimestamp = sessions && sessions.length > 0
+    ? Math.max(...sessions.filter(s => s.childId === child.id).map(s => s.date))
+    : null;
+
+  const isReviewMode = lastSessionTimestamp !== null && shouldEnterReviewMode(lastSessionTimestamp);
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Review Mode Banner - shows if 3+ week gap detected */}
+      <ReviewModeBanner
+        childName={child?.name || ''}
+        isReviewMode={isReviewMode}
+      />
+
       {/* Subject Filters */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         <button
