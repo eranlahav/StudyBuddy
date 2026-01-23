@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 
 ## Current Position
 
-Phase: 4 of 5 (Multi-Signal Integration) - COMPLETE
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-01-23 — Completed 04-04-PLAN.md (UI Signal Integration)
+Phase: 5 of 5 (Profile Maintenance & Visualization) - IN PROGRESS
+Plan: 2 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-23 — Completed 05-02-PLAN.md (Alert Service)
 
-Progress: [██████████████████████████████] 100% (14/14 plans total across all phases)
+Progress: [████████████████████████████████] 100% (15/18 plans total across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 2.5 minutes
-- Total execution time: 0.58 hours
+- Total plans completed: 15
+- Average duration: 2.3 minutes
+- Total execution time: 0.60 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: [███████████████████████
 | 02 - Profile-Aware Quiz | 3 | 10 min | 3.3 min |
 | 03 - Recommendation Engine | 4 | 8 min | 2.0 min |
 | 04 - Multi-Signal Integration | 4 | 7 min | 1.75 min |
+| 05 - Profile Maintenance | 2 | 2 min | 1.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (2 min), 03-04 (1 min), 04-01 (2 min), 04-02 (2 min), 04-03 (2 min), 04-04 (3 min)
-- Trend: Excellent velocity maintained through Phase 4
+- Last 5 plans: 04-01 (2 min), 04-02 (2 min), 04-03 (2 min), 04-04 (3 min), 05-02 (1 min)
+- Trend: Outstanding velocity, Phase 5 off to fast start
 
 *Updated after each plan completion*
 
@@ -136,6 +137,12 @@ Key decisions affecting current work:
 - Evaluation signal after save — Only valid evaluations trigger profile updates
 - Multi-dimensional display — Signal source, engagement level, accuracy/speed/consistency in AnalysisTab
 
+**New from 05-02:**
+- Regression threshold at 0.7 (70% confidence) — Below typical learning/mastery boundary, indicates significant concern
+- Mastery threshold at 0.8 (80%) for regression alerts — Only alert when truly mastered content regresses
+- 14-day cooldown per topic — Prevents alert fatigue while allowing intervention time
+- 10% minimum drop threshold — Reduces noise from normal BKT variance (e.g., 0.85 -> 0.78 won't alert)
+
 ### Pending Todos
 
 None yet.
@@ -160,8 +167,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23T15:42:00Z
-Stopped at: Completed 04-04-PLAN.md (UI Signal Integration) - PHASE 4 COMPLETE
+Last session: 2026-01-23T18:22:59Z
+Stopped at: Completed 05-02-PLAN.md (Alert Service)
 Resume file: None
 
 ---
