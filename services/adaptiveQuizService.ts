@@ -12,6 +12,8 @@
 
 import { LearnerProfile, TopicClassification, DifficultyMix } from '../types';
 import { shuffle } from '../lib';
+import { daysSince } from '../lib/signalWeights';
+import { needsProbeQuestion } from './probeScheduler';
 
 // Mastery thresholds (from Phase 1)
 const WEAK_THRESHOLD = 0.5;
@@ -22,6 +24,19 @@ const REVIEW_RATIO = 0.2;   // 20% mastered topics
 const TARGET_RATIO = 0.5;   // 50% learning topics
 const WEAK_RATIO = 0.3;     // 30% weak topics
 const WEAK_RATIO_FRUSTRATED = 0.1;  // Reduced weak % when frustrated
+
+/**
+ * Review mode configuration constants
+ * Triggers after extended absence to ease child back into learning
+ */
+export const REVIEW_MODE_CONFIG = {
+  /** Trigger review mode after this many days gap */
+  GAP_THRESHOLD_DAYS: 21,  // 3 weeks
+  /** Percentage of questions that should be review */
+  REVIEW_PERCENTAGE: 0.30,  // 30%
+  /** Minimum pKnown to be eligible for review */
+  MIN_REVIEW_PKNOWN: 0.65
+} as const;
 
 /**
  * Classify topics based on BKT mastery levels
@@ -154,4 +169,84 @@ export function getOrderedTopics(mix: DifficultyMix): string[] {
 export function hasProfileData(profile: LearnerProfile | null): boolean {
   if (!profile) return false;
   return Object.keys(profile.topicMastery).length >= 3;
+}
+
+/**
+ * Check if quiz should enter review mode (child returning after gap)
+ *
+ * Review mode triggers after 3+ weeks of inactivity to ease the child
+ * back into learning with familiar content before challenging material.
+ *
+ * @param lastSessionTimestamp - Timestamp of last session (milliseconds)
+ * @returns True if review mode should be activated
+ */
+export function shouldEnterReviewMode(lastSessionTimestamp: number): boolean {
+  const daysSinceLastSession = daysSince(lastSessionTimestamp);
+  return daysSinceLastSession >= REVIEW_MODE_CONFIG.GAP_THRESHOLD_DAYS;
+}
+
+/**
+ * Select topics for review mode (returning after gap)
+ *
+ * Selects topics that:
+ * - Belong to the same subject
+ * - Have pKnown >= 0.65 (previously learned)
+ * - Haven't been practiced in 21+ days
+ *
+ * Returns oldest topics first (most in need of refresh).
+ *
+ * @param profile - Child's learner profile
+ * @param currentSubjectId - Current subject being studied
+ * @returns Up to 3 topics for review
+ */
+export function selectReviewTopics(
+  profile: LearnerProfile | null,
+  currentSubjectId: string
+): string[] {
+  if (!profile) return [];
+
+  const now = Date.now();
+  const gapThresholdMs = REVIEW_MODE_CONFIG.GAP_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+
+  // Filter topics: same subject, learned (pKnown >= 0.65), stale (21+ days old)
+  const eligibleTopics = Object.values(profile.topicMastery)
+    .filter(mastery =>
+      mastery.subjectId === currentSubjectId &&
+      mastery.pKnown >= REVIEW_MODE_CONFIG.MIN_REVIEW_PKNOWN &&
+      mastery.lastAttempt && (now - mastery.lastAttempt) >= gapThresholdMs
+    )
+    // Sort by lastAttempt ascending (oldest first, most need refresh)
+    .sort((a, b) => (a.lastAttempt || 0) - (b.lastAttempt || 0));
+
+  // Return top 3 topic names
+  return eligibleTopics.slice(0, 3).map(m => m.topic);
+}
+
+/**
+ * Select mastered topics due for probe verification
+ *
+ * Probes verify that mastered content is still retained.
+ * Uses SM-2 based scheduling from probeScheduler.
+ *
+ * @param profile - Child's learner profile
+ * @param subjectId - Current subject being studied
+ * @returns Up to 2 topics due for probing
+ */
+export function selectProbeTopics(
+  profile: LearnerProfile | null,
+  subjectId: string
+): string[] {
+  if (!profile) return [];
+
+  // Filter topics: same subject, needs probe
+  const dueTopics = Object.values(profile.topicMastery)
+    .filter(mastery =>
+      mastery.subjectId === subjectId &&
+      needsProbeQuestion(mastery)
+    )
+    // Sort by nextProbeDate ascending (most overdue first)
+    .sort((a, b) => (a.nextProbeDate || 0) - (b.nextProbeDate || 0));
+
+  // Return max 2 probe topics per quiz
+  return dueTopics.slice(0, 2).map(m => m.topic);
 }
