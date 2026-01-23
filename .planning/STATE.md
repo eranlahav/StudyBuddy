@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 
 **Core value:** Every child gets a personalized learning path that adapts to their actual needs - focusing on weaknesses, predicting mastery, and evolving with every interaction.
 
-**Current focus:** Phase 2 Complete - Ready for Phase 3
+**Current focus:** Phase 4 - Multi-Signal Integration
 
 ## Current Position
 
-Phase: 3 of 5 (Recommendation Engine) — IN PROGRESS
-Plan: 3 of 4 in current phase
-Status: Recommendation hook complete
-Last activity: 2026-01-23 — Completed 03-03-PLAN.md (useRecommendations hook)
+Phase: 4 of 5 (Multi-Signal Integration)
+Plan: 2 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-23 — Completed 04-02-PLAN.md (Engagement Detector)
 
-Progress: [████████████████████████] 100% (10/10 plans total across all phases)
+Progress: [████████████████████████████░░] 86% (12/14 plans total across all phases)
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [███████████████████████
 |-------|-------|-------|----------|
 | 01 - Profile Foundation | 4 | 10 min | 2.5 min |
 | 02 - Profile-Aware Quiz | 3 | 10 min | 3.3 min |
-| 03 - Recommendation Engine | 3 | 5 min | 1.7 min |
+| 03 - Recommendation Engine | 4 | 8 min | 2.0 min |
 
 **Recent Trend:**
 - Last 5 plans: 02-03 (4 min), 03-01 (2 min), 03-02 (1 min), 03-03 (2 min)
@@ -105,6 +105,24 @@ Key decisions affecting current work:
 - Override recording is fire-and-forget — Non-blocking analytics pattern, error swallowing
 - Loading state reflects profile loading — Profile is the only long-loading dependency, calculation is instant
 
+**New from 03-04:**
+- RecommendationsPanel lives in PlanTab (not index.tsx) — Better fit with existing tab navigation structure
+- HTML5 datalist combobox for goal topics — Allows both predefined suggestions AND manual entry
+- Collapsible goals section with badge count — Clean UI, goals are secondary to recommendations
+- Custom topic badge ("נושא מותאם") — Visual indicator for parent-defined topics not in standard list
+
+**New from 04-01:**
+- Signal types: quiz (70%), evaluation (95%), engagement (60%), parent_note (40%) — Evidence hierarchy from ITS research
+- Recency decay: 50% at 30 days — Exponential decay to reduce stale evidence impact
+- Sample size boost: 10 samples for ~63% confidence — More data = higher confidence in estimate
+- fuseSignals uses confidence-weighted average — Bayesian fusion for multi-source integration
+
+**New from 04-02:**
+- Four engagement levels: high/medium/low/avoidance — Matches student engagement research
+- Mastery adjustments: low=-0.05, avoidance=-0.10 — Conservative penalties to confidence, not mastery
+- Minimum 3 questions for engagement analysis — Too few questions gives unreliable signal
+- Hebrew reasoning strings for parent dashboard — Explains assessment in native language
+
 ### Pending Todos
 
 None yet.
@@ -125,8 +143,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23T06:24:39Z
-Stopped at: Completed 03-03-PLAN.md (useRecommendations Hook)
+Last session: 2026-01-23T15:30:00Z
+Stopped at: Completed 04-02-PLAN.md (Engagement Detector)
 Resume file: None
 
 ---
