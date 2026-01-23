@@ -149,6 +149,14 @@ Key decisions affecting current work:
 - 14-day cooldown per topic — Prevents alert fatigue while allowing intervention time
 - 10% minimum drop threshold — Reduces noise from normal BKT variance (e.g., 0.85 -> 0.78 won't alert)
 
+**New from 05-03:**
+- Initial probe interval 28 days (4 weeks) per SM-2 standard — Research-backed spaced repetition timing
+- Probe interval doubles on success up to 168 days (24 weeks) — Prevents over-spacing while rewarding consistent mastery
+- Failed probes demote pKnown to 0.75 — Significant penalty but recoverable, triggers re-learning
+- Review mode triggers at 21+ day gap (3 weeks) — Balances retention and session frequency
+- Review questions 30% of quiz in review mode — Significant but not overwhelming refresh
+- Max 2 probe topics per quiz — Avoids probe overload
+
 **New from 05-04:**
 - 0.7 minimum confidence threshold for AI prerequisite suggestions — Filters low-quality AI output
 - gradeToNumber() extracts numeric grade (1-8) from Hebrew enum — Clearer AI prompts
