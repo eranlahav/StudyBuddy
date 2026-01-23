@@ -85,10 +85,8 @@ function fuseTopicWithSignal(
   topic: string,
   subjectId: string,
   newSignal: Signal,
-  grade: GradeLevel
+  _grade: GradeLevel
 ): TopicMastery {
-  const params = getBKTParams(grade);
-
   // Initialize if first time seeing this topic
   if (!existing) {
     return {
@@ -454,11 +452,11 @@ export async function processEvaluationSignal(
  */
 export async function processEngagementSignal(
   childId: string,
-  familyId: string,
+  _familyId: string,
   topic: string,
-  subjectId: string,
+  _subjectId: string,
   metrics: EngagementMetrics,
-  grade: GradeLevel
+  _grade: GradeLevel
 ): Promise<void> {
   try {
     // Analyze engagement
