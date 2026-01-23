@@ -72,12 +72,12 @@ export const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({
     setOverrideTopic(null);
   };
 
-  const handleAddGoal = (goal: LearningGoal) => {
-    // Goals automatically update via subscription
+  const handleAddGoal = (_goal: LearningGoal) => {
+    // Goals automatically update via subscription - callback satisfies GoalForm interface
   };
 
-  const handleDeleteGoal = (goalId: string) => {
-    // Goals automatically update via subscription
+  const handleDeleteGoal = (_goalId: string) => {
+    // Goals automatically update via subscription - callback satisfies GoalForm interface
   };
 
   return (
