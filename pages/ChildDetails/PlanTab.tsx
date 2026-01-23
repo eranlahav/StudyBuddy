@@ -14,6 +14,7 @@ import {
   Image as ImageIcon, Mic, Plus
 } from 'lucide-react';
 import { PlanTabProps } from './types';
+import { RecommendationsPanel } from './RecommendationsPanel';
 
 export const PlanTab: React.FC<PlanTabProps> = ({
   child,
@@ -26,6 +27,9 @@ export const PlanTab: React.FC<PlanTabProps> = ({
   // Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
+
+  // Subject selector for recommendations
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
 
   // Common Form Fields
   const [testType, setTestType] = useState<TestType>('quiz');
@@ -219,8 +223,46 @@ export const PlanTab: React.FC<PlanTabProps> = ({
     }
   };
 
+  // Get selected subject object
+  const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* AI Recommendations Section */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
+        <h3 className="font-bold text-gray-900 text-lg mb-4">המלצות AI מותאמות אישית</h3>
+        <p className="text-gray-600 text-sm mb-4">
+          בחר/י מקצוע כדי לקבל המלצות לימוד מבוססות על ביצועי הילד/ה, מבחנים מתוכננים ויעדים אישיים
+        </p>
+
+        {/* Subject Selector */}
+        <select
+          value={selectedSubjectId}
+          onChange={(e) => setSelectedSubjectId(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+        >
+          <option value="">בחר/י מקצוע...</option>
+          {child.subjects.map(subId => {
+            const sub = subjects.find(s => s.id === subId);
+            if (!sub) return null;
+            return (
+              <option key={subId} value={subId}>
+                {sub.icon} {sub.name}
+              </option>
+            );
+          })}
+        </select>
+
+        {/* Show RecommendationsPanel when subject selected */}
+        {selectedSubject && (
+          <div className="mt-6">
+            <RecommendationsPanel child={child} subject={selectedSubject} />
+          </div>
+        )}
+      </div>
+
+      <hr className="border-gray-200" />
+
       {/* Active Subjects List */}
       <div className="mb-6">
         <h3 className="font-bold text-gray-900 text-lg mb-4">מקצועות פעילים</h3>
