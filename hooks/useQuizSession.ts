@@ -16,7 +16,8 @@ import {
   FrustrationState,
   ADAPTIVE_QUIZ_CONSTANTS,
   LearnerProfile,
-  QuestionRequest
+  QuestionRequest,
+  StudySession
 } from '../types';
 import {
   generateQuizQuestions,
@@ -28,7 +29,11 @@ import {
   classifyTopics,
   mixDifficulty,
   orderTopics,
-  hasProfileData
+  hasProfileData,
+  shouldEnterReviewMode,
+  selectReviewTopics,
+  selectProbeTopics,
+  REVIEW_MODE_CONFIG
 } from '../services/adaptiveQuizService';
 import { generateDictationQuestions } from '../services/dictationService';
 import { getUserMessage, logger, getEncouragementMessage, buildEngagementMetrics } from '../lib';
@@ -80,6 +85,8 @@ export interface UseQuizSessionOptions {
   isFinalReview: boolean;
   /** Learner profile for adaptive quiz (optional - falls back to static) */
   profile?: LearnerProfile | null;
+  /** Previous sessions for review mode detection (optional) */
+  sessions?: StudySession[];
   /** Callback when session is saved (can be async) */
   onSessionSave?: (session: {
     score: number;
@@ -112,6 +119,8 @@ export interface UseQuizSessionReturn extends QuizSessionState, FinalReviewState
   fatigueState: FatigueState;
   /** Frustration tracking state (for analytics) */
   frustrationState: FrustrationState;
+  /** Whether quiz is in review mode (child returning after 3+ week gap) */
+  isReviewMode: boolean;
 }
 
 /**
@@ -142,6 +151,7 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     upcomingTests,
     isFinalReview,
     profile,
+    sessions,
     onSessionSave,
     onAddRemediationTest
   } = options;
@@ -167,6 +177,7 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
   const [fatigueEndMessage, setFatigueEndMessage] = useState<string | null>(null);
   const [frustrationEndMessage, setFrustrationEndMessage] = useState<string | null>(null);
   const [earlyEndReason, setEarlyEndReason] = useState<'fatigue' | 'frustration' | null>(null);
+  const [isReviewMode, setIsReviewMode] = useState(false);
 
   // Fatigue tracking
   const [fatigueState, setFatigueState] = useState<FatigueState>({
@@ -246,6 +257,32 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
           topicCount: Object.keys(profile.topicMastery).length
         });
 
+        // Check for review mode (3+ week gap since last session)
+        const childSessions = sessions?.filter(s => s.childId === child.id) || [];
+        const lastSessionDate = childSessions.length > 0
+          ? Math.max(...childSessions.map(s => s.date))
+          : null;
+
+        const inReviewMode = lastSessionDate !== null && shouldEnterReviewMode(lastSessionDate);
+        setIsReviewMode(inReviewMode);
+
+        if (inReviewMode && lastSessionDate) {
+          const daysSinceLastSession = Math.floor((Date.now() - lastSessionDate) / (1000 * 60 * 60 * 24));
+          logger.info('useQuizSession: Entering review mode', { daysSinceLastSession });
+        }
+
+        // Get probe topics (mastered topics due for verification)
+        const probeTopics = selectProbeTopics(profile, subject.id);
+        if (probeTopics.length > 0) {
+          logger.info('useQuizSession: Including probe topics', { probeTopics });
+        }
+
+        // Get review topics (if in review mode)
+        const reviewTopicsFromGap = inReviewMode ? selectReviewTopics(profile, subject.id) : [];
+        if (reviewTopicsFromGap.length > 0) {
+          logger.info('useQuizSession: Including review topics for gap', { reviewTopicsFromGap });
+        }
+
         // Get available topics (from subject or just the session topic)
         const availableTopics = subject.topics?.length > 0 ? subject.topics : targetTopics;
 
@@ -259,6 +296,34 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
 
         // Apply difficulty mixing (20/50/30 ratio)
         const mix = mixDifficulty(classification, count, true);
+
+        // Augment mix with probe topics (add to review if not already present)
+        if (probeTopics.length > 0) {
+          const existingReview = new Set(mix.reviewTopics);
+          for (const probeTopic of probeTopics) {
+            if (!existingReview.has(probeTopic)) {
+              mix.reviewTopics.push(probeTopic);
+            }
+          }
+        }
+
+        // In review mode, ensure review topics from gap are included (30% of questions)
+        if (inReviewMode && reviewTopicsFromGap.length > 0) {
+          const reviewCount = Math.ceil(count * REVIEW_MODE_CONFIG.REVIEW_PERCENTAGE);
+          const existingReview = new Set(mix.reviewTopics);
+          let added = 0;
+          for (const reviewTopic of reviewTopicsFromGap) {
+            if (!existingReview.has(reviewTopic) && added < reviewCount) {
+              mix.reviewTopics.push(reviewTopic);
+              added++;
+            }
+          }
+          logger.info('useQuizSession: Review mode question mix', {
+            reviewCount,
+            totalReviewTopics: mix.reviewTopics.length
+          });
+        }
+
         logger.info('useQuizSession: Difficulty mix', {
           review: mix.reviewTopics.length,
           target: mix.targetTopics.length,
@@ -297,7 +362,9 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
         logger.info('useQuizSession: Adaptive questions loaded', {
           childId: child.id,
           count: data.length,
-          topics: data.map(q => q.topic)
+          topics: data.map(q => q.topic),
+          isReviewMode: inReviewMode,
+          probeTopicsIncluded: probeTopics
         });
       } else {
         // Fallback: Static generation (existing behavior)
@@ -339,7 +406,7 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     } finally {
       setIsLoading(false);
     }
-  }, [child, subject, topic, isFinalReview, findRelevantTest, profile]);
+  }, [child, subject, topic, isFinalReview, findRelevantTest, profile, sessions]);
 
   /**
    * Detect fatigue based on speed AND accuracy drop
@@ -787,6 +854,7 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     // Adaptive state (for analytics)
     fatigueState,
     frustrationState,
+    isReviewMode,
 
     // Actions
     loadQuestions,
