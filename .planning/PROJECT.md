@@ -2,7 +2,9 @@
 
 ## What This Is
 
-An intelligent learning profile system for Study Buddy that builds a comprehensive, AI-powered profile for each child. The profile tracks knowledge gaps, progress over time, and prioritized next steps - learning from every quiz, evaluation, and interaction to personalize future learning. Parents have full control to guide, override, and shape their child's learning path.
+An intelligent learning profile system for Study Buddy that builds comprehensive, AI-powered profiles for each child. The profile tracks knowledge gaps, progress over time, and prioritized next steps - learning from every quiz, evaluation, and interaction to personalize future learning. Parents have full control to guide, override, and shape their child's learning path.
+
+**Current State:** v1.0 shipped with 31,138 lines of TypeScript/TSX.
 
 ## Core Value
 
@@ -12,7 +14,7 @@ Every child gets a personalized learning path that adapts to their actual needs 
 
 ### Validated
 
-<!-- Existing capabilities from codebase -->
+<!-- Shipped in v1.0 -->
 
 - ✓ AI-powered quiz generation via Gemini API — existing
 - ✓ Multi-tenant family system with parent/child accounts — existing
@@ -23,26 +25,27 @@ Every child gets a personalized learning path that adapts to their actual needs 
 - ✓ Hebrew games for early readers (6 game types) — existing
 - ✓ Upcoming test scheduling — existing
 - ✓ Real-time Firestore sync — existing
+- ✓ Learning Profile: Comprehensive profile per child showing gaps, progress, next steps — v1.0
+- ✓ Profile Analytics: Knowledge gap detection across subjects and topics — v1.0
+- ✓ Progress Tracking: Trend visualization showing improvement over time — v1.0
+- ✓ AI Recommendations: Prioritized next steps based on profile data — v1.0
+- ✓ Quiz Adaptation: Quiz generator uses profile to focus on weaknesses — v1.0
+- ✓ Mastery Prediction: AI predicts topic mastery and identifies prerequisites — v1.0
+- ✓ Personalized Curriculum: AI-generated learning path per child — v1.0
+- ✓ Parent Override: Parents can override AI priorities — v1.0
+- ✓ Parent Context: Parents can add notes/observations that inform the profile — v1.0
+- ✓ Parent Goals: Parents can set learning targets (e.g., "master fractions by June") — v1.0
+- ✓ Profile Signals: Profile learns from quiz performance (answers, timing, patterns) — v1.0
+- ✓ Evaluation Integration: Profile learns from scanned school evaluations — v1.0
+- ✓ Engagement Signals: Profile detects avoidance patterns, session behavior — v1.0
+- ✓ Parent Observations: Parent notes feed into profile (e.g., "she guessed on #3") — v1.0
+- ✓ Profile Editing: Parents can directly edit profile entries and priorities — v1.0
 
 ### Active
 
-<!-- New capabilities for this milestone -->
+<!-- New capabilities for next milestone -->
 
-- [ ] Learning Profile: Comprehensive profile per child showing gaps, progress, next steps
-- [ ] Profile Analytics: Knowledge gap detection across subjects and topics
-- [ ] Progress Tracking: Trend visualization showing improvement over time
-- [ ] AI Recommendations: Prioritized next steps based on profile data
-- [ ] Quiz Adaptation: Quiz generator uses profile to focus on weaknesses
-- [ ] Mastery Prediction: AI predicts topic mastery and identifies prerequisites
-- [ ] Personalized Curriculum: AI-generated learning path per child
-- [ ] Parent Override: Parents can override AI priorities
-- [ ] Parent Context: Parents can add notes/observations that inform the profile
-- [ ] Parent Goals: Parents can set learning targets (e.g., "master fractions by June")
-- [ ] Profile Signals: Profile learns from quiz performance (answers, timing, patterns)
-- [ ] Evaluation Integration: Profile learns from scanned school evaluations
-- [ ] Engagement Signals: Profile detects avoidance patterns, session behavior
-- [ ] Parent Observations: Parent notes feed into profile (e.g., "she guessed on #3")
-- [ ] Profile Editing: Parents can directly edit profile entries and priorities
+(None yet - define in /gsd:new-milestone)
 
 ### Out of Scope
 
@@ -54,21 +57,53 @@ Every child gets a personalized learning path that adapts to their actual needs 
 
 ## Context
 
-**Existing Codebase:**
+**Codebase State (v1.0):**
 - React 18 SPA with TypeScript, Firebase backend (Firestore, Auth, Storage)
-- Gemini AI integration for quiz generation and evaluation analysis
+- Gemini AI integration for quiz generation, evaluation analysis, and prerequisite detection
 - Multi-tenant architecture with family-scoped data
 - Service layer pattern with comprehensive error handling and retry logic
-- 7-phase refactoring completed through Phase 3 (Foundation, Services, Hooks)
+- 31,138 lines of TypeScript/TSX across 96 files
 
 **Technical Foundation:**
-- Quiz sessions already store answers, scores, timing
-- Evaluations already analyzed by AI (OCR, proficiency extraction)
-- Children have per-subject proficiency levels (easy/medium/hard)
-- Parent dashboard exists with analytics charts (recharts)
+- BKT-based learner profiles with grade-specific parameters
+- Multi-signal fusion (quiz 70%, evaluation 95%, engagement 60%, parent notes 40%)
+- Ebbinghaus forgetting curves with three-tier decay rates
+- SM-2 spaced repetition for probe scheduling
+- Adaptive quiz generation with 20/50/30 difficulty mixing
 
-**Key Insight:**
-The app already collects the data needed - quiz answers, evaluation results, engagement. The profile system connects these signals into a coherent learning model that drives future quiz generation.
+**v1.0 Architecture:**
+```
+lib/
+  learnerModel.ts      — BKT algorithm
+  signalWeights.ts     — Confidence weighting, Bayesian fusion
+  engagementDetector.ts — Session behavior analysis
+  forgettingCurve.ts   — Time-based mastery decay
+  encouragement.ts     — Hebrew messages for fatigue/frustration
+
+services/
+  profileService.ts    — Firestore CRUD for learner profiles
+  signalService.ts     — Signal processors (quiz, eval, engagement, notes)
+  recommendationService.ts — Topic scoring and recommendations
+  goalsService.ts      — Learning goals CRUD
+  alertService.ts      — Regression detection
+  probeScheduler.ts    — SM-2 mastery verification
+  adaptiveQuizService.ts — Topic classification and difficulty mixing
+  prerequisiteService.ts — AI prerequisite detection
+
+hooks/
+  useLearnerProfile.ts — Profile subscription with regression alerts
+  useQuizSession.ts    — Adaptive quiz flow with engagement tracking
+  useRecommendations.ts — Recommendation orchestration
+
+pages/ChildDetails/
+  AnalysisTab.tsx      — Topic mastery display, radar chart, timeline
+  PlanTab.tsx          — Recommendations panel, goals form
+  RecommendationsPanel.tsx — AI recommendations with override
+  SkillRadarChart.tsx  — Recharts RadarChart
+  ProgressTimeline.tsx — Recharts AreaChart
+  AlertNotificationBanner.tsx — Regression alerts
+  ReviewModeBanner.tsx — Welcome back message
+```
 
 ## Constraints
 
@@ -82,11 +117,18 @@ The app already collects the data needed - quiz answers, evaluation results, eng
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Fresh profile start (no history bootstrap) | Cleaner data, avoid noise from old sessions | — Pending |
-| Parents only see analytics | Protect child motivation, avoid "weakness" framing | — Pending |
-| Focus quizzes on weaknesses | Most efficient learning path | — Pending |
-| Full parent control over AI | Parent authority over child's education | — Pending |
-| Full learning model (not simple tracking) | Maximize value of AI, predict mastery | — Pending |
+| Fresh profile start (no history bootstrap) | Cleaner data, avoid noise from old sessions | ✓ Good |
+| Parents only see analytics | Protect child motivation, avoid "weakness" framing | ✓ Good |
+| Focus quizzes on weaknesses | Most efficient learning path | ✓ Good |
+| Full parent control over AI | Parent authority over child's education | ✓ Good |
+| Full learning model (not simple tracking) | Maximize value of AI, predict mastery | ✓ Good |
+| Grade-band-specific BKT parameters (1-3, 4-6, 7-8) | Different age groups need different learning/slip rates | ✓ Good |
+| Fire-and-forget for profile updates | Non-blocking, never disrupt quiz flow | ✓ Good |
+| Signal weights: 95% eval, 70% quiz, 60% engagement, 40% notes | Evidence hierarchy from ITS research | ✓ Good |
+| Three-tier forgetting decay (0.95/0.92/0.88 weekly) | Strong knowledge decays slower | ✓ Good |
+| SM-2 probe intervals (28-168 days) | Research-backed spaced repetition | ✓ Good |
+| Regression threshold at 0.7 with 14-day cooldown | Balance alert visibility with fatigue | ✓ Good |
 
 ---
-*Last updated: 2026-01-22 after initialization*
+*Last updated: 2026-01-24 after v1.0 milestone*
+
