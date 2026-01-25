@@ -44,7 +44,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTopic || !parent) return;
+    if (!selectedTopic.trim() || !parent) return;
 
     setIsSubmitting(true);
     try {
@@ -88,29 +88,28 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Topic Dropdown */}
+          {/* Topic Input with Suggestions */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               נושא
             </label>
-            <select
+            <input
+              type="text"
+              list="topic-suggestions"
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
+              placeholder="בחר או הקלד נושא..."
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               required
-            >
-              <option value="">בחר נושא...</option>
+            />
+            <datalist id="topic-suggestions">
               {availableTopics.map(topic => (
-                <option key={topic} value={topic}>
-                  {topic}
-                </option>
+                <option key={topic} value={topic} />
               ))}
-            </select>
-            {availableTopics.length === 0 && (
-              <p className="text-sm text-gray-500 mt-2">
-                כל הנושאים במקצוע זה כבר מוגדרים כיעדים
-              </p>
-            )}
+            </datalist>
+            <p className="text-sm text-gray-500 mt-2">
+              בחר מהרשימה או הקלד נושא חדש
+            </p>
           </div>
 
           {/* Target Date (Optional) */}
@@ -143,7 +142,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
           {/* Submit Button */}
           <Button
             type="submit"
-            disabled={!selectedTopic || isSubmitting || availableTopics.length === 0}
+            disabled={!selectedTopic.trim() || isSubmitting}
             className="w-full"
           >
             {isSubmitting ? 'מוסיף...' : 'הוסף יעד'}
@@ -162,13 +161,22 @@ export const GoalForm: React.FC<GoalFormProps> = ({
           <p className="text-gray-500 text-center py-8">אין יעדים מוגדרים</p>
         ) : (
           <div className="space-y-3">
-            {existingGoals.map(goal => (
+            {existingGoals.map(goal => {
+              const isCustomTopic = !subject.topics.includes(goal.topic);
+              return (
               <div
                 key={goal.id}
                 className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900 mb-1">{goal.topic}</div>
+                  <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
+                    {goal.topic}
+                    {isCustomTopic && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                        נושא מותאם
+                      </span>
+                    )}
+                  </div>
                   {goal.targetDate && (
                     <div className="text-sm text-gray-600 mb-1">
                       יעד: {new Date(goal.targetDate).toLocaleDateString('he-IL')}
@@ -186,7 +194,8 @@ export const GoalForm: React.FC<GoalFormProps> = ({
                   <X size={20} />
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

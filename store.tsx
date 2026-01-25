@@ -3,8 +3,18 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User as FirebaseUser } from 'firebase/auth';
 import { AppState, ChildProfile, Subject, StudySession, UpcomingTest, Evaluation, Parent, Family, SUPER_ADMIN_EMAIL } from './types';
 import { DEFAULT_SUBJECTS } from './constants';
-import { TEST_KIDS, TEST_SESSIONS, TEST_UPCOMING_TESTS } from './constants/testKids';
+import { isTestKid } from './constants/testKids';
 import { logger } from './lib';
+import {
+  initializeTestStorage,
+  resetTestStorage,
+  getTestChildren,
+  getTestSessions,
+  getTestTests,
+  getTestEvaluations,
+  isTestEvaluation,
+  isTestUpcomingTest
+} from './services/testKidsStorage';
 import {
   // Auth services
   signInWithGoogle as authSignInWithGoogle,
@@ -84,6 +94,8 @@ interface StoreContextType extends AppState {
   // Test mode (super admin only)
   isTestMode: boolean;
   toggleTestMode: () => void;
+  resetTestData: () => void;
+  refreshTestData: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -398,7 +410,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateChild = useCallback(async (id: string, updates: Partial<ChildProfile>) => {
     await updateChildService(id, updates);
-  }, []);
+    // Refresh store if test kid (localStorage has no subscriptions)
+    if (isTestKid(id) && isTestMode) {
+      setState(prev => ({ ...prev, children: getTestChildren() }));
+    }
+  }, [isTestMode]);
 
   const deleteChild = useCallback(async (id: string) => {
     await deleteChildService(id);
@@ -406,7 +422,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const resetChildStats = useCallback(async (childId: string) => {
     await resetChildStatsService(childId);
-  }, []);
+    // Refresh store if test kid (localStorage has no subscriptions)
+    if (isTestKid(childId) && isTestMode) {
+      setState(prev => ({ ...prev, children: getTestChildren() }));
+    }
+  }, [isTestMode]);
 
   // --- Session Actions ---
   const addSession = useCallback(async (sessionData: Omit<StudySession, 'familyId'>) => {
@@ -435,7 +455,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Profile update failure should never break quiz flow
       });
     }
-  }, [family, state.children]);
+
+    // Refresh store if test kid (localStorage has no subscriptions)
+    if (isTestKid(session.childId) && isTestMode) {
+      setState(prev => ({
+        ...prev,
+        children: getTestChildren(),
+        sessions: getTestSessions()
+      }));
+    }
+  }, [family, state.children, isTestMode]);
 
   // --- Test Actions ---
   const addUpcomingTest = useCallback(async (testData: Omit<UpcomingTest, 'familyId'>) => {
@@ -449,15 +478,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     await addTest(test);
-  }, [family]);
+
+    // Refresh store if test kid (localStorage has no subscriptions)
+    if (isTestKid(test.childId) && isTestMode) {
+      setState(prev => ({ ...prev, upcomingTests: getTestTests() }));
+    }
+  }, [family, isTestMode]);
 
   const updateUpcomingTest = useCallback(async (testId: string, updates: Partial<UpcomingTest>) => {
     await updateTest(testId, updates);
-  }, []);
+    // Refresh store if test data (localStorage has no subscriptions)
+    if (isTestUpcomingTest(testId) && isTestMode) {
+      setState(prev => ({ ...prev, upcomingTests: getTestTests() }));
+    }
+  }, [isTestMode]);
 
   const removeUpcomingTest = useCallback(async (testId: string) => {
     await deleteTest(testId);
-  }, []);
+    // Refresh store if test data (localStorage has no subscriptions)
+    if (isTestUpcomingTest(testId) && isTestMode) {
+      setState(prev => ({ ...prev, upcomingTests: getTestTests() }));
+    }
+  }, [isTestMode]);
 
   // --- Subject Actions ---
   const addSubject = useCallback(async (subject: Subject) => {
@@ -480,15 +522,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     await addEvaluationService(evaluation);
-  }, [family]);
+
+    // Refresh store if test kid (localStorage has no subscriptions)
+    if (isTestKid(evaluation.childId) && isTestMode) {
+      setState(prev => ({ ...prev, evaluations: getTestEvaluations() }));
+    }
+  }, [family, isTestMode]);
 
   const updateEvaluation = useCallback(async (id: string, updates: Partial<Evaluation>) => {
     await updateEvaluationService(id, updates);
-  }, []);
+    // Refresh store if test evaluation (localStorage has no subscriptions)
+    if (isTestEvaluation(id) && isTestMode) {
+      setState(prev => ({ ...prev, evaluations: getTestEvaluations() }));
+    }
+  }, [isTestMode]);
 
   const deleteEvaluation = useCallback(async (id: string, fileUrls?: string[]) => {
     await deleteEvaluationService(id, fileUrls);
-  }, []);
+    // Refresh store if test evaluation (localStorage has no subscriptions)
+    if (isTestEvaluation(id) && isTestMode) {
+      setState(prev => ({ ...prev, evaluations: getTestEvaluations() }));
+    }
+  }, [isTestMode]);
 
   // --- Test Mode Toggle (Super Admin Only) ---
   const toggleTestMode = useCallback(() => {
@@ -506,21 +561,59 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [parent?.isSuperAdmin]);
 
   // --- Test Mode Data Override ---
-  // When test mode is active, replace real data with test kids
+  // When test mode is active, load data from localStorage (persistent)
   useEffect(() => {
     if (isTestMode && parent?.isSuperAdmin) {
-      logger.info('store: Activating test mode with mock data');
+      // Initialize storage with defaults if first time
+      initializeTestStorage();
+
+      // Load data from localStorage
+      logger.info('store: Activating test mode with persistent data');
       setState(prev => ({
         ...prev,
-        children: TEST_KIDS,
-        sessions: TEST_SESSIONS,
-        upcomingTests: TEST_UPCOMING_TESTS,
-        evaluations: [], // No mock evaluations for test kids
+        children: getTestChildren(),
+        sessions: getTestSessions(),
+        upcomingTests: getTestTests(),
+        evaluations: getTestEvaluations(),
         isLoading: false
       }));
     }
     // When test mode is disabled, the normal family subscription will restore data
     // (handled by the family?.id effect dependency)
+  }, [isTestMode, parent?.isSuperAdmin]);
+
+  // --- Reset Test Data (Super Admin Only) ---
+  const resetTestData = useCallback(() => {
+    if (!parent?.isSuperAdmin || !isTestMode) {
+      return;
+    }
+
+    logger.info('store: Resetting test data to defaults');
+    resetTestStorage();
+
+    // Reload fresh data
+    setState(prev => ({
+      ...prev,
+      children: getTestChildren(),
+      sessions: getTestSessions(),
+      upcomingTests: getTestTests(),
+      evaluations: getTestEvaluations()
+    }));
+  }, [parent?.isSuperAdmin, isTestMode]);
+
+  // --- Refresh Test Data from localStorage (for UI updates after service writes) ---
+  const refreshTestData = useCallback(() => {
+    if (!isTestMode || !parent?.isSuperAdmin) {
+      return;
+    }
+
+    setState(prev => ({
+      ...prev,
+      children: getTestChildren(),
+      sessions: getTestSessions(),
+      upcomingTests: getTestTests(),
+      evaluations: getTestEvaluations()
+    }));
   }, [isTestMode, parent?.isSuperAdmin]);
 
   return (
@@ -547,6 +640,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       deleteEvaluation,
       isTestMode,
       toggleTestMode,
+      resetTestData,
+      refreshTestData,
     }}>
       {children}
     </StoreContext.Provider>

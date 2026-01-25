@@ -191,12 +191,21 @@ export const QuizSession: React.FC = () => {
       )}
 
       {/* Progress Bar */}
-      <div className="mb-6 bg-slate-200 rounded-full h-4 overflow-hidden">
+      <div className="mb-4 bg-slate-200 rounded-full h-4 overflow-hidden">
         <div
           className="bg-indigo-500 h-full transition-all duration-500 ease-out"
           style={{ width: `${(quiz.currentIndex / quiz.questions.length) * 100}%` }}
         ></div>
       </div>
+
+      {/* Question Navigation Dots */}
+      <QuestionNavigation
+        totalQuestions={quiz.questions.length}
+        currentIndex={quiz.currentIndex}
+        isQuestionAnswered={quiz.isQuestionAnswered}
+        isAnswerCorrect={quiz.isAnswerCorrect}
+        onGoToQuestion={quiz.goToQuestion}
+      />
 
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden border-b-8 border-slate-200">
         <div className="p-8">
@@ -236,13 +245,15 @@ export const QuizSession: React.FC = () => {
             onSelect={quiz.handleAnswer}
           />
 
-          {/* Explanation & Next Button */}
+          {/* Explanation & Navigation Buttons */}
           {quiz.isAnswered && (
             <AnswerFeedback
               isCorrect={quiz.selectedOption === currentQ.correctAnswerIndex}
               explanation={currentQ.explanation}
               isLastQuestion={quiz.currentIndex === quiz.questions.length - 1}
+              isFirstQuestion={quiz.currentIndex === 0}
               onNext={quiz.currentIndex === quiz.questions.length - 1 ? quiz.finishSession : quiz.nextQuestion}
+              onPrevious={quiz.previousQuestion}
             />
           )}
         </div>
@@ -252,6 +263,56 @@ export const QuizSession: React.FC = () => {
 };
 
 // --- Sub-components ---
+
+interface QuestionNavigationProps {
+  totalQuestions: number;
+  currentIndex: number;
+  isQuestionAnswered: (index: number) => boolean;
+  isAnswerCorrect: (index: number) => boolean | null;
+  onGoToQuestion: (index: number) => void;
+}
+
+const QuestionNavigation: React.FC<QuestionNavigationProps> = ({
+  totalQuestions,
+  currentIndex,
+  isQuestionAnswered,
+  isAnswerCorrect,
+  onGoToQuestion
+}) => (
+  <div className="mb-6 flex flex-wrap justify-center gap-2" dir="ltr">
+    {Array.from({ length: totalQuestions }, (_, i) => {
+      const answered = isQuestionAnswered(i);
+      const correct = isAnswerCorrect(i);
+      const isCurrent = i === currentIndex;
+
+      // Determine dot styling based on state
+      let bgColor = 'bg-slate-200'; // unanswered
+      let textColor = 'text-slate-500';
+      if (answered) {
+        if (correct) {
+          bgColor = 'bg-green-500';
+          textColor = 'text-white';
+        } else {
+          bgColor = 'bg-red-400';
+          textColor = 'text-white';
+        }
+      }
+
+      return (
+        <button
+          key={i}
+          onClick={() => onGoToQuestion(i)}
+          className={`w-8 h-8 rounded-full text-sm font-bold transition-all
+            ${bgColor} ${textColor}
+            ${isCurrent ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}
+            hover:scale-110 hover:shadow-md`}
+        >
+          {i + 1}
+        </button>
+      );
+    })}
+  </div>
+);
 
 interface QuestionHeaderProps {
   currentIndex: number;
@@ -304,6 +365,32 @@ interface QuestionContentProps {
 const QuestionContent: React.FC<QuestionContentProps> = ({ question, isMath, isEnglish }) => {
   const { speak } = useSpeechSynthesis();
 
+  // Check if content has mixed Hebrew instruction + English content
+  // Hebrew range: \u0590-\u05FF
+  const hasHebrewChars = /[\u0590-\u05FF]/.test(question.questionText);
+  const hasEnglishChars = /[a-zA-Z]/.test(question.questionText);
+  const hasMixedContent = hasHebrewChars && hasEnglishChars;
+
+  // Split mixed content at colon to separate Hebrew instruction from English question
+  const splitMixedContent = () => {
+    const colonIndex = question.questionText.indexOf(':');
+    if (colonIndex > 0) {
+      return {
+        instruction: question.questionText.slice(0, colonIndex + 1).trim(),
+        content: question.questionText.slice(colonIndex + 1).trim()
+      };
+    }
+    // Fallback: find where English starts
+    const englishMatch = question.questionText.match(/[a-zA-Z]/);
+    if (englishMatch && englishMatch.index) {
+      return {
+        instruction: question.questionText.slice(0, englishMatch.index).trim(),
+        content: question.questionText.slice(englishMatch.index).trim()
+      };
+    }
+    return null;
+  };
+
   return (
     <div className="relative mb-8 text-center">
       {question.audioText && (
@@ -339,6 +426,31 @@ const QuestionContent: React.FC<QuestionContentProps> = ({ question, isMath, isE
             </h2>
           </div>
         </div>
+      ) : isEnglish && hasMixedContent ? (
+        // Mixed Hebrew instruction + English content - render separately
+        (() => {
+          const split = splitMixedContent();
+          if (split) {
+            return (
+              <div className="space-y-3">
+                {/* Hebrew instruction - right aligned */}
+                <p className="text-lg text-slate-500 font-medium" dir="rtl">
+                  {split.instruction}
+                </p>
+                {/* English content - left aligned, larger */}
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 leading-tight text-left" dir="ltr">
+                  {split.content}
+                </h2>
+              </div>
+            );
+          }
+          // Fallback to original behavior
+          return (
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 leading-tight text-left" dir="ltr">
+              {question.questionText}
+            </h2>
+          );
+        })()
       ) : (
         <h2
           className={`text-2xl md:text-3xl font-bold text-slate-800 leading-tight ${isEnglish ? 'text-left' : 'text-right'}`}
@@ -414,14 +526,18 @@ interface AnswerFeedbackProps {
   isCorrect: boolean;
   explanation: string;
   isLastQuestion: boolean;
+  isFirstQuestion: boolean;
   onNext: () => void;
+  onPrevious: () => void;
 }
 
 const AnswerFeedback: React.FC<AnswerFeedbackProps> = ({
   isCorrect,
   explanation,
   isLastQuestion,
-  onNext
+  isFirstQuestion,
+  onNext,
+  onPrevious
 }) => (
   <div className="mt-8 animate-fade-in" dir="rtl">
     <div className={`p-4 rounded-xl flex gap-4 ${
@@ -441,7 +557,12 @@ const AnswerFeedback: React.FC<AnswerFeedbackProps> = ({
       </div>
     </div>
 
-    <div className="mt-6 flex justify-end">
+    <div className="mt-6 flex justify-between">
+      {!isFirstQuestion ? (
+        <Button onClick={onPrevious} size="lg" variant="secondary" className="shadow-md">
+          שאלה קודמת
+        </Button>
+      ) : <div />}
       <Button onClick={onNext} size="lg" className="shadow-xl">
         {isLastQuestion ? 'סיים תרגול' : 'שאלה הבאה'} <ArrowLeft className="mr-2 w-5 h-5" />
       </Button>

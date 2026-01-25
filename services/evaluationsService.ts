@@ -21,6 +21,8 @@ import { db } from '../firebaseConfig';
 import { Evaluation } from '../types';
 import { logger, DatabaseError } from '../lib';
 import { deleteEvaluationFiles } from './storageService';
+import { isTestKid } from '../constants/testKids';
+import { addTestEvaluation, updateTestEvaluation, deleteTestEvaluation, isTestEvaluation } from './testKidsStorage';
 
 const COLLECTION = 'evaluations';
 
@@ -82,8 +84,19 @@ export function subscribeToChildEvaluations(
 
 /**
  * Add a new evaluation
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function addEvaluation(evaluation: Evaluation): Promise<void> {
+  // Write to localStorage for test kids
+  if (isTestKid(evaluation.childId)) {
+    logger.debug('evaluationsService: Writing to localStorage for test kid', {
+      evaluationId: evaluation.id,
+      childId: evaluation.childId
+    });
+    addTestEvaluation(evaluation);
+    return;
+  }
+
   try {
     await setDoc(doc(db, COLLECTION, evaluation.id), evaluation);
     logger.info('evaluationsService: Evaluation added', {
@@ -103,11 +116,22 @@ export async function addEvaluation(evaluation: Evaluation): Promise<void> {
 
 /**
  * Update an existing evaluation
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function updateEvaluation(
   id: string,
   updates: Partial<Evaluation>
 ): Promise<void> {
+  // Write to localStorage for test evaluations
+  if (isTestEvaluation(id)) {
+    logger.debug('evaluationsService: Updating in localStorage', {
+      evaluationId: id,
+      updatedFields: Object.keys(updates)
+    });
+    updateTestEvaluation(id, updates);
+    return;
+  }
+
   try {
     await updateDoc(doc(db, COLLECTION, id), updates);
     logger.info('evaluationsService: Evaluation updated', {
@@ -124,11 +148,19 @@ export async function updateEvaluation(
 
 /**
  * Delete an evaluation and its files
+ * Deletes from localStorage for test kids (persistent test data)
  */
 export async function deleteEvaluation(
   id: string,
   fileUrls?: string[]
 ): Promise<void> {
+  // Delete from localStorage for test evaluations
+  if (isTestEvaluation(id)) {
+    logger.debug('evaluationsService: Deleting from localStorage', { evaluationId: id });
+    deleteTestEvaluation(id);
+    return;
+  }
+
   try {
     // Delete files from storage first
     if (fileUrls && fileUrls.length > 0) {

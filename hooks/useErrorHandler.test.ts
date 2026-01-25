@@ -76,7 +76,7 @@ describe('useErrorHandler', () => {
       const asyncFn = vi.fn().mockResolvedValue('returned value');
       const { result } = renderHook(() => useErrorHandler(asyncFn));
 
-      let returnedValue: string | null = null;
+      let returnedValue: unknown = null;
       await act(async () => {
         returnedValue = await result.current.execute();
       });
@@ -117,7 +117,7 @@ describe('useErrorHandler', () => {
       const asyncFn = vi.fn().mockRejectedValue(new Error('fail'));
       const { result } = renderHook(() => useErrorHandler(asyncFn));
 
-      let returnedValue: string | null = 'not null';
+      let returnedValue: unknown = 'not null';
       await act(async () => {
         returnedValue = await result.current.execute();
       });

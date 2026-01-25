@@ -108,3 +108,13 @@ export {
   applyForgettingCurveToProfile,
   FORGETTING_CONFIG
 } from './forgettingCurve';
+
+// Analytics (Google Analytics via Firebase)
+export {
+  trackQuizStart,
+  trackQuizComplete,
+  trackChildCreated,
+  trackGamePlayed,
+  trackTestScheduled,
+  trackPageView
+} from './analytics';

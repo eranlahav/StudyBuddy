@@ -57,50 +57,80 @@ export const PlanTab: React.FC<PlanTabProps> = ({
     .filter(t => t.childId === child.id)
     .sort((a, b) => a.date - b.date);
 
+  // Save state
+  const [isSaving, setIsSaving] = useState(false);
+
   // --- Handlers ---
   const handleSaveTest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTestSubject || !newTestDate) return;
+    if (!newTestSubject || !newTestDate) {
+      alert('נא לבחור מקצוע ותאריך');
+      return;
+    }
 
     let topicsArray: string[] = [];
     let wordsArray: string[] | undefined = undefined;
 
     if (testType === 'quiz') {
-      if (!newTestTopics) return;
+      if (!newTestTopics) {
+        alert('נא להזין נושאים למבחן');
+        return;
+      }
       topicsArray = newTestTopics.split(',').map(t => t.trim()).filter(t => t.length > 0);
     } else {
-      if (!dictationName || !dictationWords) return;
+      if (!dictationName || !dictationWords) {
+        alert('נא להזין שם הכתבה ורשימת מילים');
+        return;
+      }
       topicsArray = [dictationName];
       wordsArray = dictationWords.split(',').map(w => w.trim()).filter(w => w.length > 0);
     }
 
+    // Build test data, only including dictation fields if it's a dictation (Firebase rejects undefined)
     const testData: Partial<UpcomingTest> = {
       subjectId: newTestSubject,
       date: new Date(newTestDate).getTime(),
       topics: topicsArray,
       numQuestions: testType === 'quiz' ? (Number(newTestNumQuestions) || 5) : wordsArray?.length,
-      type: testType,
-      dictationWords: wordsArray,
-      dictationMode: testType === 'dictation' ? dictationMode : undefined
+      type: testType
     };
 
-    if (editingTestId) {
-      await updateUpcomingTest(editingTestId, testData);
-    } else {
-      await addUpcomingTest({
-        id: Date.now().toString(),
-        childId: child.id,
-        subjectId: newTestSubject,
-        date: new Date(newTestDate).getTime(),
-        topics: topicsArray,
-        numQuestions: testType === 'quiz' ? (Number(newTestNumQuestions) || 5) : wordsArray?.length || 0,
-        type: testType,
-        dictationWords: wordsArray,
-        dictationMode: testType === 'dictation' ? dictationMode : undefined
-      });
+    if (testType === 'dictation' && wordsArray) {
+      testData.dictationWords = wordsArray;
+      testData.dictationMode = dictationMode;
     }
 
-    resetForm();
+    setIsSaving(true);
+    try {
+      if (editingTestId) {
+        await updateUpcomingTest(editingTestId, testData);
+      } else {
+        // Build test object, only including dictation fields if it's a dictation
+        const newTest: Parameters<typeof addUpcomingTest>[0] = {
+          id: Date.now().toString(),
+          childId: child.id,
+          subjectId: newTestSubject,
+          date: new Date(newTestDate).getTime(),
+          topics: topicsArray,
+          numQuestions: testType === 'quiz' ? (Number(newTestNumQuestions) || 5) : wordsArray?.length || 0,
+          type: testType
+        };
+
+        // Only add dictation fields for dictation type (Firebase doesn't accept undefined)
+        if (testType === 'dictation' && wordsArray) {
+          newTest.dictationWords = wordsArray;
+          newTest.dictationMode = dictationMode;
+        }
+
+        await addUpcomingTest(newTest);
+      }
+      resetForm();
+    } catch (error) {
+      console.error('Failed to save test:', error);
+      alert('שגיאה בשמירת המבחן: ' + (error instanceof Error ? error.message : 'שגיאה לא ידועה'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleEditTest = (test: UpcomingTest) => {
@@ -338,6 +368,7 @@ export const PlanTab: React.FC<PlanTabProps> = ({
           selectedImage={selectedImage}
           imagePreview={imagePreview}
           isAnalyzing={isAnalyzing}
+          isSaving={isSaving}
           fileInputRef={fileInputRef}
           onSubmit={handleSaveTest}
           onCancel={resetForm}
@@ -398,6 +429,7 @@ interface TestFormProps {
   selectedImage: File | null;
   imagePreview: string | null;
   isAnalyzing: boolean;
+  isSaving: boolean;
   fileInputRef: React.RefObject<HTMLInputElement>;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
@@ -429,6 +461,7 @@ const TestForm: React.FC<TestFormProps> = ({
   selectedImage,
   imagePreview,
   isAnalyzing,
+  isSaving,
   fileInputRef,
   onSubmit,
   onCancel,
@@ -451,7 +484,7 @@ const TestForm: React.FC<TestFormProps> = ({
           <select
             value={newTestSubject}
             onChange={e => setNewTestSubject(e.target.value)}
-            className="w-full rounded-lg border-gray-300 p-2.5 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full rounded-lg border border-gray-300 p-2.5 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             required
           >
             <option value="">בחר מקצוע...</option>
@@ -466,7 +499,7 @@ const TestForm: React.FC<TestFormProps> = ({
             type="date"
             value={newTestDate}
             onChange={e => setNewTestDate(e.target.value)}
-            className="w-full rounded-lg border-gray-300 p-2.5 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full rounded-lg border border-gray-300 p-2.5 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             required
           />
         </div>
@@ -500,8 +533,8 @@ const TestForm: React.FC<TestFormProps> = ({
       )}
 
       <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>ביטול</Button>
-        <Button type="submit">שמור מבחן</Button>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isSaving}>ביטול</Button>
+        <Button type="submit" isLoading={isSaving} disabled={isSaving}>שמור מבחן</Button>
       </div>
     </form>
   </div>
@@ -605,7 +638,7 @@ const QuizFormFields: React.FC<QuizFormFieldsProps> = ({
         type="text"
         value={newTestTopics}
         onChange={e => setNewTestTopics(e.target.value)}
-        className="w-full rounded-lg border-gray-300 p-2.5 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+        className="w-full rounded-lg border border-gray-300 p-2.5 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
         placeholder="לדוגמה: שברים, כפל במאונך, בעיות מילוליות"
         required
       />
@@ -616,7 +649,7 @@ const QuizFormFields: React.FC<QuizFormFieldsProps> = ({
       <select
         value={newTestNumQuestions}
         onChange={e => setNewTestNumQuestions(Number(e.target.value))}
-        className="w-full rounded-lg border-gray-300 p-2.5 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+        className="w-full rounded-lg border border-gray-300 p-2.5 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
       >
         <option value={5}>5 שאלות (קצר)</option>
         <option value={10}>10 שאלות (רגיל)</option>
@@ -659,7 +692,7 @@ const DictationFormFields: React.FC<DictationFormFieldsProps> = ({
             type="text"
             value={dictationName}
             onChange={e => setDictationName(e.target.value)}
-            className="w-full rounded-lg border-purple-200 p-2.5 bg-white shadow-sm focus:ring-purple-500 focus:border-purple-500"
+            className="w-full rounded-lg border border-purple-200 p-2.5 bg-white shadow-sm focus:ring-purple-500 focus:border-purple-500"
             placeholder='לדוגמה: מילים עם צליל "אה"'
             required
           />
@@ -668,7 +701,7 @@ const DictationFormFields: React.FC<DictationFormFieldsProps> = ({
         <div>
           <label className="block text-sm font-medium text-purple-900 mb-1">רשימת מילים (מופרדות בפסיקים)</label>
           <textarea
-            className="w-full rounded-lg border-purple-200 p-3 text-sm focus:ring-purple-500 focus:border-purple-500 min-h-[80px]"
+            className="w-full rounded-lg border border-purple-200 p-3 text-sm focus:ring-purple-500 focus:border-purple-500 min-h-[80px]"
             placeholder="חתול, כלב, שולחן, כיסא..."
             value={dictationWords}
             onChange={e => setDictationWords(e.target.value)}

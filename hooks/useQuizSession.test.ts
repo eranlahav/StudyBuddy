@@ -55,7 +55,8 @@ const mockChild: ChildProfile = {
   subjects: ['math-1'],
   proficiency: { 'math-1': 'medium' },
   pinHash: '',
-  createdAt: Date.now()
+  createdAt: Date.now(),
+  createdBy: 'parent-1'
 };
 
 const mockSubject: Subject = {
@@ -73,7 +74,8 @@ const mockQuestions: QuizQuestion[] = [
     correctAnswerIndex: 1,
     explanation: 'התשובה היא 5',
     difficulty: 'medium',
-    tip: 'ספור על האצבעות'
+    tip: 'ספור על האצבעות',
+    topic: 'חיבור'
   },
   {
     questionText: 'כמה זה 5 - 2?',
@@ -81,7 +83,8 @@ const mockQuestions: QuizQuestion[] = [
     correctAnswerIndex: 1,
     explanation: 'התשובה היא 3',
     difficulty: 'medium',
-    tip: 'חשוב על זה הפוך'
+    tip: 'חשוב על זה הפוך',
+    topic: 'חיבור'
   },
   {
     questionText: 'כמה זה 4 + 4?',
@@ -89,7 +92,8 @@ const mockQuestions: QuizQuestion[] = [
     correctAnswerIndex: 2,
     explanation: 'התשובה היא 8',
     difficulty: 'medium',
-    tip: 'זה מספר כפול'
+    tip: 'זה מספר כפול',
+    topic: 'חיבור'
   }
 ];
 

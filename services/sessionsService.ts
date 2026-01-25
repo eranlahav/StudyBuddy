@@ -19,6 +19,7 @@ import { db } from '../firebaseConfig';
 import { StudySession } from '../types';
 import { logger, DatabaseError } from '../lib';
 import { isTestKid } from '../constants/testKids';
+import { addTestSession } from './testKidsStorage';
 
 const COLLECTION = 'sessions';
 
@@ -53,15 +54,16 @@ export function subscribeToSessions(
 
 /**
  * Add a new study session
- * Silently skips for test kids (allows quiz completion without Firebase writes)
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function addSession(session: StudySession): Promise<void> {
-  // Silently skip for test kids (allows quiz flow to complete normally)
+  // Write to localStorage for test kids
   if (isTestKid(session.childId)) {
-    logger.debug('sessionsService: Skipping save for test kid', {
+    logger.debug('sessionsService: Writing to localStorage for test kid', {
       childId: session.childId,
       score: `${session.score}/${session.totalQuestions}`
     });
+    addTestSession(session);
     return;
   }
 

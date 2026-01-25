@@ -21,6 +21,7 @@ import { db } from '../firebaseConfig';
 import { ChildProfile } from '../types';
 import { logger, DatabaseError } from '../lib';
 import { isTestKid } from '../constants/testKids';
+import { updateTestChild, awardTestChildPoints } from './testKidsStorage';
 
 const COLLECTION = 'children';
 
@@ -66,15 +67,17 @@ export async function addChild(child: ChildProfile): Promise<void> {
 
 /**
  * Update an existing child profile
- * Throws error for test kids (read-only mock data)
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function updateChild(
   id: string,
   updates: Partial<ChildProfile>
 ): Promise<void> {
-  // Prevent modifying test kids
+  // Write to localStorage for test kids
   if (isTestKid(id)) {
-    throw new Error('לא ניתן לערוך ילדי בדיקה');
+    logger.debug('childrenService: Writing to localStorage for test kid', { childId: id, fields: Object.keys(updates) });
+    updateTestChild(id, updates);
+    return;
   }
 
   try {
@@ -107,12 +110,14 @@ export async function deleteChild(id: string): Promise<void> {
 
 /**
  * Reset a child's stars and streak to zero
- * Throws error for test kids (read-only mock data)
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function resetChildStats(id: string): Promise<void> {
-  // Prevent resetting test kids
+  // Write to localStorage for test kids
   if (isTestKid(id)) {
-    throw new Error('לא ניתן לאפס ילדי בדיקה');
+    logger.debug('childrenService: Resetting stats in localStorage for test kid', { childId: id });
+    updateTestChild(id, { stars: 0, streak: 0 });
+    return;
   }
 
   try {
@@ -129,7 +134,7 @@ export async function resetChildStats(id: string): Promise<void> {
 
 /**
  * Award points and increment streak for a child
- * Silently skips for test kids (allows quiz completion without errors)
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function awardPoints(
   id: string,
@@ -137,9 +142,10 @@ export async function awardPoints(
   currentStreak: number,
   pointsEarned: number
 ): Promise<void> {
-  // Silently skip for test kids (allows quiz flow to complete normally)
+  // Write to localStorage for test kids
   if (isTestKid(id)) {
-    logger.debug('childrenService: Skipping points for test kid', { childId: id, pointsEarned });
+    logger.debug('childrenService: Writing points to localStorage for test kid', { childId: id, pointsEarned });
+    awardTestChildPoints(id, currentStars, currentStreak, pointsEarned);
     return;
   }
 

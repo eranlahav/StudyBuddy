@@ -21,6 +21,7 @@ import { db } from '../firebaseConfig';
 import { UpcomingTest } from '../types';
 import { logger, DatabaseError } from '../lib';
 import { isTestKid } from '../constants/testKids';
+import { addTestTest, updateTestTest, deleteTestTest } from './testKidsStorage';
 
 /**
  * Check if a test ID belongs to a mock test
@@ -60,12 +61,13 @@ export function subscribeToTests(
 
 /**
  * Add a new upcoming test
- * Silently skips for test kids (mock tests are read-only)
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function addTest(test: UpcomingTest): Promise<void> {
-  // Silently skip for test kids
+  // Write to localStorage for test kids
   if (isTestKid(test.childId)) {
-    logger.debug('testsService: Skipping add for test kid', { childId: test.childId });
+    logger.debug('testsService: Writing to localStorage for test kid', { childId: test.childId });
+    addTestTest(test);
     return;
   }
 
@@ -85,15 +87,17 @@ export async function addTest(test: UpcomingTest): Promise<void> {
 
 /**
  * Update an existing test
- * Throws error for mock tests (read-only)
+ * Writes to localStorage for test kids (persistent test data)
  */
 export async function updateTest(
   id: string,
   updates: Partial<UpcomingTest>
 ): Promise<void> {
-  // Prevent modifying mock tests
+  // Write to localStorage for test kids
   if (isTestMockTest(id)) {
-    throw new Error('לא ניתן לערוך מבחני בדיקה');
+    logger.debug('testsService: Updating in localStorage for test kid', { testId: id, fields: Object.keys(updates) });
+    updateTestTest(id, updates);
+    return;
   }
 
   try {
@@ -107,12 +111,14 @@ export async function updateTest(
 
 /**
  * Delete a test
- * Throws error for mock tests (read-only)
+ * Deletes from localStorage for test kids (persistent test data)
  */
 export async function deleteTest(id: string): Promise<void> {
-  // Prevent deleting mock tests
+  // Delete from localStorage for test kids
   if (isTestMockTest(id)) {
-    throw new Error('לא ניתן למחוק מבחני בדיקה');
+    logger.debug('testsService: Deleting from localStorage for test kid', { testId: id });
+    deleteTestTest(id);
+    return;
   }
 
   try {

@@ -11,7 +11,7 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { parent, family, signOut, isTestMode, toggleTestMode } = useStore();
+  const { parent, family, signOut, isTestMode, toggleTestMode, resetTestData } = useStore();
   const isParentView = location.pathname.startsWith('/parent');
   const isChildView = location.pathname.startsWith('/child');
   const isHome = location.pathname === '/';
@@ -135,15 +135,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {isTestMode && parent?.isSuperAdmin && (
         <div className="bg-amber-50 border-b-2 border-amber-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-            <div className="flex items-center justify-center gap-2 text-amber-800 text-sm font-medium">
+            <div className="flex items-center justify-center gap-2 sm:gap-4 text-amber-800 text-sm font-medium flex-wrap">
               <span className="animate-pulse">🧪</span>
-              <span>מצב בדיקה פעיל - הנתונים המוצגים הם דמה</span>
-              <button
-                onClick={toggleTestMode}
-                className="underline hover:no-underline mr-2"
-              >
-                חזרה לילדים אמיתיים
-              </button>
+              <span className="text-center">מצב בדיקה פעיל - שינויים נשמרים מקומית</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={resetTestData}
+                  className="bg-amber-200 hover:bg-amber-300 px-2 py-1 rounded text-xs font-bold transition-colors"
+                >
+                  🔄 אפס נתונים
+                </button>
+                <button
+                  onClick={toggleTestMode}
+                  className="underline hover:no-underline"
+                >
+                  חזרה לילדים אמיתיים
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -36,7 +36,7 @@ import {
   REVIEW_MODE_CONFIG
 } from '../services/adaptiveQuizService';
 import { generateDictationQuestions } from '../services/dictationService';
-import { getUserMessage, logger, getEncouragementMessage, buildEngagementMetrics } from '../lib';
+import { getUserMessage, logger, getEncouragementMessage, buildEngagementMetrics, trackQuizStart, trackQuizComplete } from '../lib';
 import { processEngagementSignal } from '../services/signalService';
 
 export interface QuizSessionState {
@@ -111,6 +111,14 @@ export interface UseQuizSessionReturn extends QuizSessionState, FinalReviewState
   handleAnswer: (optionIndex: number) => void;
   /** Move to next question */
   nextQuestion: () => void;
+  /** Move to previous question */
+  previousQuestion: () => void;
+  /** Jump to specific question by index */
+  goToQuestion: (index: number) => void;
+  /** Check if a question has been answered */
+  isQuestionAnswered: (index: number) => boolean;
+  /** Check if answer at index was correct */
+  isAnswerCorrect: (index: number) => boolean | null;
   /** Toggle tip visibility */
   toggleTip: () => void;
   /** Finish the session and generate recommendations */
@@ -395,6 +403,9 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
       }
 
       setQuestions(data);
+
+      // Track quiz start in Google Analytics
+      trackQuizStart(child.id, subject.id, isFinalReview ? 'final-review' : topic);
     } catch (err) {
       const message = getUserMessage(err);
       setError(message);
@@ -679,6 +690,42 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     }
   }, [currentIndex, questions.length]);
 
+  // Move to previous question
+  const previousQuestion = useCallback(() => {
+    if (currentIndex > 0) {
+      const prevIndex = currentIndex - 1;
+      setCurrentIndex(prevIndex);
+      // Check if previous question was already answered
+      const wasAnswered = userAnswers[prevIndex] !== undefined;
+      setSelectedOption(wasAnswered ? userAnswers[prevIndex] : null);
+      setIsAnswered(wasAnswered);
+      setShowTip(false);
+    }
+  }, [currentIndex, userAnswers]);
+
+  // Jump to specific question by index
+  const goToQuestion = useCallback((index: number) => {
+    if (index >= 0 && index < questions.length) {
+      setCurrentIndex(index);
+      // Check if target question was already answered
+      const wasAnswered = userAnswers[index] !== undefined;
+      setSelectedOption(wasAnswered ? userAnswers[index] : null);
+      setIsAnswered(wasAnswered);
+      setShowTip(false);
+    }
+  }, [questions.length, userAnswers]);
+
+  // Check if a question has been answered
+  const isQuestionAnswered = useCallback((index: number): boolean => {
+    return userAnswers[index] !== undefined;
+  }, [userAnswers]);
+
+  // Check if answer at index was correct (null if not answered)
+  const isAnswerCorrect = useCallback((index: number): boolean | null => {
+    if (userAnswers[index] === undefined) return null;
+    return userAnswers[index] === questions[index]?.correctAnswerIndex;
+  }, [userAnswers, questions]);
+
   // Toggle tip visibility
   const toggleTip = useCallback(() => {
     setShowTip(prev => !prev);
@@ -697,6 +744,9 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
           questions,
           userAnswers
         });
+
+        // Track quiz completion in Google Analytics
+        trackQuizComplete(child.id, subject.id, score, questions.length);
 
         // Fire engagement signal (fire-and-forget)
         const sessionEndTime = Date.now();
@@ -794,6 +844,9 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
         recommendations: finalRecs.length > 0 ? finalRecs : undefined,
         readinessScore: readiness
       });
+
+      // Track final review completion in Google Analytics
+      trackQuizComplete(child.id, subject.id, score, questions.length);
     } catch (e) {
       logger.error('useQuizSession: Failed to save final review session', { childId: child.id }, e);
     }
@@ -813,10 +866,13 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     earlyEndReason
   ]);
 
-  // Load questions on mount
+  // Load questions on mount (only once)
+  // We intentionally exclude loadQuestions from deps to prevent re-triggering
+  // when profile updates from real-time subscription
   useEffect(() => {
     loadQuestions();
-  }, [loadQuestions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Derived state
   const currentQuestion = questions[currentIndex] || null;
@@ -860,6 +916,10 @@ export function useQuizSession(options: UseQuizSessionOptions): UseQuizSessionRe
     loadQuestions,
     handleAnswer,
     nextQuestion,
+    previousQuestion,
+    goToQuestion,
+    isQuestionAnswered,
+    isAnswerCorrect,
     toggleTip,
     finishSession
   };

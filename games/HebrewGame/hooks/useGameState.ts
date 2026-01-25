@@ -10,6 +10,7 @@ import { VOWELS } from '../../hebrewData';
 import { GameMode, GameQuestion, FeedbackState } from '../types';
 import { generateQuestion } from '../generators';
 import { playWin, playLoss, speakWord } from '../audio';
+import { trackGamePlayed } from '../../../lib';
 
 export interface UseGameStateOptions {
   settings?: GameSettings;
@@ -149,6 +150,8 @@ export function useGameState(options: UseGameStateOptions = {}): UseGameStateRet
         setSpeedCount(nextCount);
         if (nextCount >= speedQuestionCount) {
           setGameFinished(true);
+          // Track speed game completion in Google Analytics
+          trackGamePlayed('speed', score + (isCorrect ? 1 : 0));
         } else {
           loadQuestion('speed');
         }

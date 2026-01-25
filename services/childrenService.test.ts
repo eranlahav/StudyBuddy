@@ -77,7 +77,8 @@ const mockChild: ChildProfile = {
   subjects: ['math-1'],
   proficiency: { 'math-1': 'medium' },
   pinHash: 'hashed-pin',
-  createdAt: Date.now()
+  createdAt: Date.now(),
+  createdBy: 'parent-1'
 };
 
 describe('childrenService', () => {

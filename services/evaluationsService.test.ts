@@ -78,16 +78,18 @@ const mockEvaluation: Evaluation = {
   subject: 'math-1',
   subjectName: 'מתמטיקה',
   testName: 'מבחן שבועי',
+  testType: 'test',
   date: now,
+  uploadedAt: now,
   percentage: 85,
-  score: '85',
-  maxScore: '100',
+  totalScore: 85,
+  maxScore: 100,
   weakTopics: ['כפל'],
   strongTopics: ['חיבור', 'חיסור'],
-  notes: 'צריך לתרגל כפל',
+  teacherComments: 'צריך לתרגל כפל',
   fileUrls: [],
-  createdAt: now,
-  createdBy: 'parent-1'
+  fileNames: [],
+  parentEdited: false
 };
 
 const mockEvaluations: Evaluation[] = [
