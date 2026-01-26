@@ -43,9 +43,11 @@ Every child gets a personalized learning path that adapts to their actual needs 
 
 ### Active
 
-<!-- New capabilities for next milestone -->
+<!-- v1.1 UI Enhancements -->
 
-(None yet - define in /gsd:new-milestone)
+- [ ] Parent Notes UI — Connect processParentNoteSignal to a UI component for parent observations
+- [ ] Prerequisite Display — Wire detectPrerequisites service to show topic dependencies in UI
+- [ ] Mobile Responsiveness — Improve responsive design across all pages
 
 ### Out of Scope
 
@@ -129,6 +131,15 @@ pages/ChildDetails/
 | SM-2 probe intervals (28-168 days) | Research-backed spaced repetition | ✓ Good |
 | Regression threshold at 0.7 with 14-day cooldown | Balance alert visibility with fatigue | ✓ Good |
 
+## Current Milestone: v1.1 UI Enhancements
+
+**Goal:** Surface existing backend capabilities to users and improve mobile experience.
+
+**Target features:**
+- Parent Notes UI — Allow parents to add observations that feed into learning profiles
+- Prerequisite Display — Show topic dependencies to help parents understand learning paths
+- Mobile Responsiveness — Ensure the app works well on phones and tablets
+
 ---
-*Last updated: 2026-01-24 after v1.0 milestone*
+*Last updated: 2026-01-26 after v1.1 milestone start*
 
