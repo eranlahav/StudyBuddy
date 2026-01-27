@@ -154,6 +154,26 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    // Parent Notes - family-scoped access for parent observations
+    match /parentNotes/{noteId} {
+      allow read: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        belongsToFamily(request.resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        belongsToFamily(resource.data.familyId) ||
+        isSuperAdmin()
+      );
+    }
+
     // Invites - anyone can read (for validation), parents can create for own family
     match /invites/{inviteId} {
       allow read: if true;  // Allow unauthenticated read for invite validation
