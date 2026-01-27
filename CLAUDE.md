@@ -2,14 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 🚧 Active Refactoring - See REFACTORING_PROGRESS.md
+## ✅ v1.0 Shipped — Ready for v1.1
 
-**Current Status:** Phase 3 Complete, Phase 4 Next (Component Decomposition)
+**Current Status:** v1.0 "Adaptive Learning Profiles" complete (2026-01-24)
 
-The codebase is undergoing a 7-phase refactoring. See `REFACTORING_PROGRESS.md` for:
-- Completed phases (1-3): Foundation, Services, Hooks
-- Next: Phase 4 - Split ChildDetails.tsx (1,066 LOC) and HebrewGame.tsx (581 LOC)
-- Key patterns established (error handling, hooks, retry)
+The project has completed both the 7-phase refactoring AND the v1.0 milestone. See `.planning/` for details:
+- `.planning/STATE.md` - Current project state
+- `.planning/MILESTONES.md` - Shipped milestones
+- `.planning/milestones/v1.0-AUDIT.md` - Full audit report
+
+**Suggested v1.1 enhancements** (from tech debt):
+- Parent notes UI (`processParentNoteSignal` exists but no UI)
+- Prerequisite display (`detectPrerequisites` exists but not wired to UI)
+- Mobile responsiveness improvements
 
 ## Project Overview
 
@@ -36,23 +41,48 @@ Firebase config is hardcoded in `firebaseConfig.ts` (public Firebase client conf
 
 ## Architecture
 
-### New Library Structure (Phase 1-3)
+### Library Structure
 
 ```
-lib/                      # Shared utilities
-├── utils.ts              # shuffle, formatHebrewDate, generateId, etc.
-├── errors.ts             # Typed errors with Hebrew messages
-├── env.ts                # Environment validation
-├── logger.ts             # Structured logging
-├── retry.ts              # Exponential backoff
-└── index.ts              # Re-exports
+lib/                        # Shared utilities & algorithms
+├── utils.ts                # shuffle, formatHebrewDate, generateId, etc.
+├── errors.ts               # Typed errors with Hebrew messages
+├── env.ts                  # Environment validation
+├── logger.ts               # Structured logging
+├── retry.ts                # Exponential backoff
+├── learnerModel.ts         # BKT algorithm (Bayesian Knowledge Tracing)
+├── forgettingCurve.ts      # Ebbinghaus decay + SM-2 scheduling
+├── signalWeights.ts        # Evidence hierarchy (eval/quiz/engagement/parent)
+├── engagementDetector.ts   # Session behavior analysis (rushing, avoidance)
+├── analytics.ts            # Profile analytics computations
+├── encouragement.ts        # Hebrew encouragement messages
+├── ocrUtils.ts             # Image text extraction utilities
+└── index.ts                # Re-exports
 
-hooks/                    # Custom React hooks
-├── useErrorHandler.ts    # Async error handling
-├── useSpeechSynthesis.ts # TTS wrapper
-├── useQuizSession.ts     # Quiz state management
-├── useConfetti.ts        # Celebration effects
-└── index.ts              # Re-exports
+hooks/                      # Custom React hooks
+├── useErrorHandler.ts      # Async error handling
+├── useSpeechSynthesis.ts   # TTS wrapper
+├── useQuizSession.ts       # Quiz state management
+├── useConfetti.ts          # Celebration effects
+├── useLearnerProfile.ts    # Profile state with real-time subscription
+├── useRecommendations.ts   # Multi-factor topic recommendations
+└── index.ts                # Re-exports
+
+services/                   # Business logic & Firebase CRUD
+├── profileService.ts       # LearnerProfile CRUD (Firestore subcollection)
+├── signalService.ts        # Multi-signal profile updates (quiz, eval, engagement)
+├── goalsService.ts         # Parent learning goals (30% recommendation weight)
+├── alertService.ts         # Regression detection with 14-day cooldown
+├── adaptiveQuizService.ts  # Difficulty mixing (20/50/30 review/target/weak)
+├── recommendationService.ts # Multi-factor scoring (mastery/urgency/goals)
+├── probeScheduler.ts       # SM-2 spaced repetition for mastered topics
+├── prerequisiteService.ts  # AI-powered topic dependency detection
+├── geminiService.ts        # AI quiz generation
+├── dictationService.ts     # Hebrew word exercises
+├── childrenService.ts      # Child profile CRUD
+├── sessionsService.ts      # Quiz session history
+├── testsService.ts         # Upcoming test management
+└── ...                     # Additional Firebase services
 ```
 
 ### State Management

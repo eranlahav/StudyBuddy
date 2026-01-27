@@ -91,6 +91,11 @@ export interface EvaluationsTabProps extends TabBaseProps {
 }
 
 /**
+ * Props for NotesTab
+ */
+export interface NotesTabProps extends TabBaseProps {}
+
+/**
  * Tab type for navigation
  */
-export type TabType = 'analysis' | 'plan' | 'games' | 'history' | 'evaluations' | 'settings';
+export type TabType = 'analysis' | 'plan' | 'games' | 'history' | 'evaluations' | 'notes' | 'settings';

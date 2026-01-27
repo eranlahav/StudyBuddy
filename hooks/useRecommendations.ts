@@ -21,6 +21,7 @@ import {
   OverrideReason
 } from '../types';
 import { useLearnerProfile } from './useLearnerProfile';
+import { usePrerequisites } from './usePrerequisites';
 import { useStore } from '../store';
 import {
   scoreTopic,
@@ -66,7 +67,15 @@ export function useRecommendations(
   const { profile, isLoading: profileLoading } = useLearnerProfile(child, []);
 
   // Get store data (upcomingTests, parent)
-  const { upcomingTests, parent } = useStore();
+  const { upcomingTests, parent, subjects } = useStore();
+
+  // Get prerequisites for weak topics (Phase 7)
+  const { getPrerequisiteFor, isLoading: prerequisitesLoading } = usePrerequisites(
+    profile,
+    subjects,
+    child?.grade || 'כיתה ג\'',
+    subject?.id
+  );
 
   // Calculate recommendations
   useEffect(() => {
@@ -117,8 +126,30 @@ export function useRecommendations(
       // Generate recommendations (5 recommendations)
       const generated = generateRecommendations(scoredTopics, 5);
 
+      // Enrich with prerequisite information (Phase 7)
+      const enriched: Recommendation[] = generated.map(rec => {
+        // Check if this topic has a prerequisite
+        const prerequisiteRel = getPrerequisiteFor(rec.topic);
+        if (prerequisiteRel) {
+          // Add prerequisite info to recommendation
+          return {
+            ...rec,
+            prerequisite: {
+              topic: prerequisiteRel.prerequisite,
+              rationale: prerequisiteRel.rationale
+            },
+            // Prepend prerequisite reasoning
+            reasoning: [
+              `יש לחזק קודם את "${prerequisiteRel.prerequisite}"`,
+              ...rec.reasoning
+            ]
+          };
+        }
+        return rec;
+      });
+
       // Filter out overridden topics
-      const filtered = generated.filter(rec => !overrides.has(rec.topic));
+      const filtered = enriched.filter(rec => !overrides.has(rec.topic));
 
       setRecommendations(filtered);
       setError(null);
@@ -141,7 +172,7 @@ export function useRecommendations(
       setError(err as Error);
       setRecommendations([]);
     }
-  }, [child?.id, subject?.id, profile, upcomingTests, goals, overrides]);
+  }, [child?.id, subject?.id, profile, upcomingTests, goals, overrides, getPrerequisiteFor]);
 
   // Handle parent override
   const handleOverride = useCallback(async (
@@ -192,7 +223,7 @@ export function useRecommendations(
 
   return {
     recommendations,
-    isLoading: profileLoading,
+    isLoading: profileLoading || prerequisitesLoading,
     error,
     handleOverride,
     refresh

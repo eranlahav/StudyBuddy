@@ -5,9 +5,10 @@
  * Enables parents to quickly identify strengths and weaknesses at a glance.
  *
  * Phase 5 - Profile Maintenance & Visualization
+ * Phase 8 - Mobile responsive sizing
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   RadarChart,
   PolarGrid,
@@ -20,6 +21,28 @@ import {
 } from 'recharts';
 import { Radar as RadarIcon } from 'lucide-react';
 import { LearnerProfile } from '../../types';
+
+/**
+ * Hook to detect mobile screen size
+ */
+const useIsMobile = (breakpoint: number = 640): boolean => {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  );
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < breakpoint);
+
+    // Check on mount
+    checkMobile();
+
+    // Listen for resize
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [breakpoint]);
+
+  return isMobile;
+};
 
 interface SkillRadarChartProps {
   profile: LearnerProfile;
@@ -37,6 +60,16 @@ export const SkillRadarChart: React.FC<SkillRadarChartProps> = ({
   subjectId,
   subjectName
 }) => {
+  const isMobile = useIsMobile(640);
+
+  // Responsive chart configuration
+  const chartConfig = useMemo(() => ({
+    height: isMobile ? 280 : 350,
+    outerRadius: isMobile ? '70%' : '80%',
+    labelFontSize: isMobile ? 10 : 11,
+    labelTruncate: isMobile ? 10 : 12
+  }), [isMobile]);
+
   // Extract and transform topics for this subject
   const chartData = useMemo(() => {
     const topics = Object.values(profile.topicMastery)
@@ -44,14 +77,16 @@ export const SkillRadarChart: React.FC<SkillRadarChartProps> = ({
       .sort((a, b) => b.pKnown - a.pKnown) // Highest mastery first
       .slice(0, 8); // Max 8 topics for readability
 
-    // Transform to recharts format with truncated labels
+    // Transform to recharts format with truncated labels (responsive truncation)
     return topics.map(t => ({
-      topic: t.topic.length > 12 ? t.topic.slice(0, 12) + '...' : t.topic,
+      topic: t.topic.length > chartConfig.labelTruncate
+        ? t.topic.slice(0, chartConfig.labelTruncate) + '...'
+        : t.topic,
       mastery: Math.round(t.pKnown * 100),
       fullTopic: t.topic,
       attempts: t.attempts
     }));
-  }, [profile.topicMastery, subjectId]);
+  }, [profile.topicMastery, subjectId, chartConfig.labelTruncate]);
 
   // Need minimum 3 topics for meaningful radar
   if (chartData.length < 3) {
@@ -71,24 +106,24 @@ export const SkillRadarChart: React.FC<SkillRadarChartProps> = ({
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
       <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
         <RadarIcon size={20} className="text-indigo-600" />
-        מפת מיומנויות - {subjectName}
+        <span className="truncate">מפת מיומנויות - {subjectName}</span>
       </h3>
 
-      <ResponsiveContainer width="100%" height={350}>
-        <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="80%">
+      <ResponsiveContainer width="100%" height={chartConfig.height}>
+        <RadarChart data={chartData} cx="50%" cy="50%" outerRadius={chartConfig.outerRadius}>
           <PolarGrid stroke="#e5e7eb" />
           <PolarAngleAxis
             dataKey="topic"
-            tick={{ fill: '#6b7280', fontSize: 11 }}
+            tick={{ fill: '#6b7280', fontSize: chartConfig.labelFontSize }}
             tickLine={false}
           />
           <PolarRadiusAxis
             angle={90}
             domain={[0, 100]}
-            tick={{ fill: '#9ca3af', fontSize: 10 }}
+            tick={{ fill: '#9ca3af', fontSize: isMobile ? 9 : 10 }}
             tickCount={5}
           />
           <Tooltip
@@ -97,7 +132,9 @@ export const SkillRadarChart: React.FC<SkillRadarChartProps> = ({
               border: 'none',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
               direction: 'rtl',
-              textAlign: 'right'
+              textAlign: 'right',
+              fontSize: isMobile ? '12px' : '14px',
+              maxWidth: isMobile ? '200px' : 'none'
             }}
             formatter={(value: number, _name: string, props: { payload: { fullTopic: string; attempts: number } }) => [
               `${value}%`,
