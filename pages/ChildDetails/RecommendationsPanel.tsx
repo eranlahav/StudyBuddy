@@ -81,9 +81,9 @@ export const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Recommendations Section */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Lightbulb className="text-indigo-600" size={24} />
@@ -132,6 +132,10 @@ export const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({
                 recommendation={rec}
                 onStartQuiz={handleStartQuiz}
                 onOverride={() => handleOpenOverride(rec.topic)}
+                onPrerequisiteClick={(prerequisiteTopic) => {
+                  // Navigate to quiz session for the prerequisite topic
+                  navigate(`/session/${child.id}/${subject.id}/${encodeURIComponent(prerequisiteTopic)}`);
+                }}
               />
             ))}
           </div>
@@ -139,7 +143,7 @@ export const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({
       </div>
 
       {/* Goals Section (Collapsible) */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
         <button
           onClick={() => setGoalsExpanded(!goalsExpanded)}
           className="flex items-center justify-between w-full mb-4"

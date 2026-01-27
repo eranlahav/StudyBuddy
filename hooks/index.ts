@@ -36,3 +36,7 @@ export type {
 // Recommendations
 export { useRecommendations } from './useRecommendations';
 export type { UseRecommendationsReturn } from './useRecommendations';
+
+// Prerequisites
+export { usePrerequisites } from './usePrerequisites';
+export type { UsePrerequisitesReturn, PrerequisiteRelationship } from './usePrerequisites';

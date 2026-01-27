@@ -492,6 +492,11 @@ export interface Recommendation {
   confidence: 'low' | 'medium' | 'high';
   reasoning: string[];
   category: 'weakness' | 'growth' | 'maintenance';
+  /** Prerequisite topic that should be mastered first (Phase 7) */
+  prerequisite?: {
+    topic: string;
+    rationale: string;
+  };
 }
 
 /**

@@ -3,21 +3,64 @@
  *
  * Shows all completed quiz sessions with expandable details
  * showing individual question results.
+ * Parents can add observation notes to questions via NoteDialog.
  */
 
 import React, { useState } from 'react';
-import { CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { HistoryTabProps } from './types';
-import { StudySession } from '../../types';
+import { StudySession, ParentNoteCategory } from '../../types';
+import { useStore } from '../../store';
+import { NoteDialog } from '../../components/NoteDialog';
+import { addParentNote } from '../../services/parentNotesService';
 
 export const HistoryTab: React.FC<HistoryTabProps> = ({
+  child,
   subjects,
   sessions
 }) => {
+  const { family, parent } = useStore();
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+
+  // NoteDialog state
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [noteContext, setNoteContext] = useState<{
+    sessionId: string;
+    questionIndex: number;
+    questionText: string;
+    topic: string;
+    isCorrect: boolean;
+  } | null>(null);
 
   const toggleSessionExpand = (sessionId: string) => {
     setExpandedSessionId(expandedSessionId === sessionId ? null : sessionId);
+  };
+
+  const handleAddNote = (
+    sessionId: string,
+    questionIndex: number,
+    questionText: string,
+    topic: string,
+    isCorrect: boolean
+  ) => {
+    setNoteContext({ sessionId, questionIndex, questionText, topic, isCorrect });
+    setNoteDialogOpen(true);
+  };
+
+  const handleNoteSubmit = async (category: ParentNoteCategory, note: string) => {
+    if (!noteContext || !family || !parent) return;
+
+    await addParentNote({
+      childId: child.id,
+      familyId: family.id,
+      parentId: parent.id,
+      sessionId: noteContext.sessionId,
+      questionIndex: noteContext.questionIndex,
+      topic: noteContext.topic,
+      note,
+      category,
+      questionCorrect: noteContext.isCorrect
+    });
   };
 
   if (sessions.length === 0) {
@@ -29,17 +72,32 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      {sessions.map(session => (
-        <SessionCard
-          key={session.id}
-          session={session}
-          subject={subjects.find(s => s.id === session.subjectId)}
-          isExpanded={expandedSessionId === session.id}
-          onToggle={() => toggleSessionExpand(session.id)}
+    <>
+      <div className="space-y-4 animate-fade-in">
+        {sessions.map(session => (
+          <SessionCard
+            key={session.id}
+            session={session}
+            subject={subjects.find(s => s.id === session.subjectId)}
+            isExpanded={expandedSessionId === session.id}
+            onToggle={() => toggleSessionExpand(session.id)}
+            onAddNote={handleAddNote}
+          />
+        ))}
+      </div>
+
+      {/* NoteDialog for adding parent observations */}
+      {noteContext && (
+        <NoteDialog
+          open={noteDialogOpen}
+          onClose={() => setNoteDialogOpen(false)}
+          onSubmit={handleNoteSubmit}
+          questionText={noteContext.questionText}
+          topic={noteContext.topic}
+          isCorrect={noteContext.isCorrect}
         />
-      ))}
-    </div>
+      )}
+    </>
   );
 };
 
@@ -50,13 +108,21 @@ interface SessionCardProps {
   subject: HistoryTabProps['subjects'][number] | undefined;
   isExpanded: boolean;
   onToggle: () => void;
+  onAddNote: (
+    sessionId: string,
+    questionIndex: number,
+    questionText: string,
+    topic: string,
+    isCorrect: boolean
+  ) => void;
 }
 
 const SessionCard: React.FC<SessionCardProps> = ({
   session,
   subject,
   isExpanded,
-  onToggle
+  onToggle,
+  onAddNote
 }) => {
   const scorePercentage = session.score / session.totalQuestions;
 
@@ -112,6 +178,13 @@ const SessionCard: React.FC<SessionCardProps> = ({
                 isCorrect={isCorrect}
                 userAnswer={q.options[userAnswer]}
                 correctAnswer={q.options[q.correctAnswerIndex]}
+                onAddNote={() => onAddNote(
+                  session.id,
+                  idx,
+                  q.questionText,
+                  session.topic,
+                  isCorrect
+                )}
               />
             );
           })}
@@ -142,13 +215,15 @@ interface QuestionResultProps {
   isCorrect: boolean;
   userAnswer: string | undefined;
   correctAnswer: string;
+  onAddNote: () => void;
 }
 
 const QuestionResult: React.FC<QuestionResultProps> = ({
   questionText,
   isCorrect,
   userAnswer,
-  correctAnswer
+  correctAnswer,
+  onAddNote
 }) => (
   <div className="bg-white p-3 rounded-lg border border-gray-200">
     <div className="flex gap-2 mb-2">
@@ -158,7 +233,18 @@ const QuestionResult: React.FC<QuestionResultProps> = ({
           : <XCircle size={16} className="text-red-500" />
         }
       </div>
-      <div className="font-medium text-gray-900">{questionText}</div>
+      <div className="font-medium text-gray-900 flex-1">{questionText}</div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddNote();
+        }}
+        className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors whitespace-nowrap"
+        title="הוסף הערה"
+      >
+        <MessageSquare size={14} />
+        <span>הוסף הערה</span>
+      </button>
     </div>
     {!isCorrect && (
       <div className="mr-6 text-sm">

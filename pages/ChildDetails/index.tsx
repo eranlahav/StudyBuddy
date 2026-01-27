@@ -15,7 +15,7 @@ import React, { useState, Suspense, lazy } from 'react';
 import { useParams } from 'react-router-dom';
 import { useStore } from '../../store';
 import {
-  Trophy, TrendingUp, Calendar, Gamepad2, RotateCcw, Settings, Sparkles, Award
+  Trophy, TrendingUp, Calendar, Gamepad2, RotateCcw, Settings, Sparkles, Award, MessageSquare
 } from 'lucide-react';
 import { TabType } from './types';
 import { TabSkeleton } from '../../components/LoadingSkeleton';
@@ -28,6 +28,7 @@ const PlanTab = lazy(() => import('./PlanTab').then(m => ({ default: m.PlanTab }
 const GamesTab = lazy(() => import('./GamesTab').then(m => ({ default: m.GamesTab })));
 const HistoryTab = lazy(() => import('./HistoryTab').then(m => ({ default: m.HistoryTab })));
 const EvaluationsTab = lazy(() => import('./EvaluationsTab').then(m => ({ default: m.EvaluationsTab })));
+const NotesTab = lazy(() => import('./NotesTab').then(m => ({ default: m.NotesTab })));
 const SettingsTab = lazy(() => import('./SettingsTab').then(m => ({ default: m.SettingsTab })));
 
 export const ChildDetails: React.FC = () => {
@@ -142,6 +143,13 @@ export const ChildDetails: React.FC = () => {
           />
         )}
 
+        {activeTab === 'notes' && (
+          <NotesTab
+            child={child}
+            subjects={subjects}
+          />
+        )}
+
         {activeTab === 'settings' && (
           <SettingsTab
             child={child}
@@ -202,11 +210,15 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
     { id: 'evaluations', label: 'הערכות', icon: <Award size={18} /> },
     { id: 'games', label: 'הגדרות משחק', icon: <Gamepad2 size={18} />, show: showGamesTab },
     { id: 'history', label: 'היסטוריה', icon: <RotateCcw size={18} /> },
+    { id: 'notes', label: 'הערות', icon: <MessageSquare size={18} /> },
     { id: 'settings', label: 'הגדרות', icon: <Settings size={18} /> }
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 flex gap-1 overflow-x-auto">
+    <div
+      className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 flex gap-1 overflow-x-auto px-2 md:px-1 scroll-smooth snap-x snap-mandatory md:snap-none"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
       {tabs.map(tab => {
         // Skip tabs that shouldn't show
         if (tab.show === false) return null;
@@ -215,13 +227,22 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-              activeTab === tab.id
+            className={`
+              flex-shrink-0 md:flex-1
+              min-h-[44px] py-3 px-4
+              rounded-lg text-sm font-medium
+              flex items-center justify-center gap-2
+              transition-all
+              snap-start
+              active:scale-95
+              ${activeTab === tab.id
                 ? 'bg-indigo-50 text-indigo-700 shadow-sm'
                 : 'text-gray-500 hover:bg-gray-50'
-            }`}
+              }
+            `}
           >
-            {tab.icon} {tab.label}
+            {tab.icon}
+            <span className="whitespace-nowrap">{tab.label}</span>
           </button>
         );
       })}

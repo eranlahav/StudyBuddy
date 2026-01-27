@@ -5,7 +5,7 @@
  * with optional subject filtering.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -13,11 +13,12 @@ import { Brain, CheckCircle, BookOpen, AlertTriangle, Clock, TrendingUp as Trend
 import { AnalysisTabProps, AnalysisData, TopicPerformance } from './types';
 import { LearnerProfile, TopicMastery, getMasteryLevel, MasteryLevel } from '../../types';
 import { formatRelativeDay, getEngagementLabel, getEngagementColorClass } from '../../lib';
-import { getConfidenceMessage } from '../../hooks';
+import { getConfidenceMessage, usePrerequisites, PrerequisiteRelationship } from '../../hooks';
 import { SkillRadarChart } from './SkillRadarChart';
 import { ProgressTimeline } from './ProgressTimeline';
 import { ReviewModeBanner } from './ReviewModeBanner';
 import { shouldEnterReviewMode } from '../../services/adaptiveQuizService';
+import { PrerequisiteBadge } from '../../components/PrerequisiteBadge';
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   child,
@@ -31,6 +32,43 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   // IMPORTANT: Store the full TopicMastery object, not just a string key
   // This avoids lookup issues with composite keys not matching topicMastery structure
   const [selectedTopic, setSelectedTopic] = useState<TopicMastery | null>(null);
+
+  // Ref map for scrolling to topic cards
+  const topicCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Get prerequisites for weak topics (with session-level caching)
+  const { prerequisites, isLoading: prerequisitesLoading, getPrerequisiteFor } = usePrerequisites(
+    profile,
+    subjects,
+    child.grade,
+    analysisFilter !== 'all' ? analysisFilter : undefined
+  );
+
+  // Handler to navigate to a prerequisite topic
+  const handlePrerequisiteClick = useCallback((prerequisiteTopic: string) => {
+    // Find the topic in the profile
+    if (!profile) return;
+
+    const targetMastery = Object.values(profile.topicMastery).find(
+      t => t.topic === prerequisiteTopic
+    );
+
+    if (targetMastery) {
+      // Scroll to the topic card
+      const cardKey = `${targetMastery.subjectId}-${targetMastery.topic}`;
+      const cardRef = topicCardRefs.current.get(cardKey);
+      if (cardRef) {
+        cardRef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add highlight animation
+        cardRef.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2');
+        setTimeout(() => {
+          cardRef.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2');
+        }, 2000);
+      }
+      // Also select the topic to show timeline
+      setSelectedTopic(targetMastery);
+    }
+  }, [profile]);
 
   // Compute analysis data
   const analysisData = useMemo((): AnalysisData => {
@@ -100,11 +138,14 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         isReviewMode={isReviewMode}
       />
 
-      {/* Subject Filters */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      {/* Subject Filters - horizontally scrollable on mobile */}
+      <div
+        className="flex gap-2 mb-6 overflow-x-auto pb-2 px-1 -mx-1 scroll-smooth snap-x snap-mandatory"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <button
           onClick={() => setAnalysisFilter('all')}
-          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border shadow-sm ${
+          className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-bold whitespace-nowrap transition-colors border shadow-sm flex-shrink-0 snap-start active:scale-95 ${
             analysisFilter === 'all'
               ? 'bg-indigo-600 text-white border-indigo-600'
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -116,7 +157,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           <button
             key={sub.id}
             onClick={() => setAnalysisFilter(sub.id)}
-            className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border shadow-sm flex items-center gap-2 ${
+            className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-bold whitespace-nowrap transition-colors border shadow-sm flex items-center gap-2 flex-shrink-0 snap-start active:scale-95 ${
               analysisFilter === sub.id
                 ? 'bg-indigo-600 text-white border-indigo-600'
                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -137,6 +178,10 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         selectedSubject={analysisFilter}
         selectedTopic={selectedTopic}
         setSelectedTopic={setSelectedTopic}
+        getPrerequisiteFor={getPrerequisiteFor}
+        prerequisitesLoading={prerequisitesLoading}
+        onPrerequisiteClick={handlePrerequisiteClick}
+        topicCardRefs={topicCardRefs}
       />
 
       {/* Progress Timeline - shown when topic clicked */}
@@ -200,12 +245,13 @@ interface ProgressChartProps {
 }
 
 const ProgressChart = React.memo<ProgressChartProps>(({ data, filterName }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-      <TrendingUp size={20} className="text-indigo-600" /> מגמת שיפור
-      {filterName && <span className="text-sm font-normal text-gray-500">({filterName})</span>}
+  <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
+    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <TrendingUp size={20} className="text-indigo-600" />
+      <span className="truncate">מגמת שיפור</span>
+      {filterName && <span className="text-xs sm:text-sm font-normal text-gray-500 truncate">({filterName})</span>}
     </h3>
-    <div className="h-64">
+    <div className="h-56 sm:h-64">
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
@@ -256,24 +302,24 @@ interface StrengthsCardProps {
 }
 
 const StrengthsCard = React.memo<StrengthsCardProps>(({ topics }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-    <h3 className="text-lg font-bold text-green-700 mb-4 flex items-center gap-2">
+  <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
+    <h3 className="text-base sm:text-lg font-bold text-green-700 mb-4 flex items-center gap-2">
       <Trophy size={20} /> נקודות חוזקה
     </h3>
     {topics.length > 0 ? (
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {topics.map((item, i) => (
-          <div key={i} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-            <div>
-              <div className="font-bold text-gray-800">{item.topicOnly}</div>
+          <div key={i} className="flex justify-between items-center p-3 bg-green-50 rounded-lg min-h-[48px]">
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-gray-800 text-sm sm:text-base truncate">{item.topicOnly}</div>
               <div className="text-xs text-green-600">{item.subject}</div>
             </div>
-            <div className="text-green-700 font-bold">{item.percentage}%</div>
+            <div className="text-green-700 font-bold text-sm sm:text-base mr-2">{item.percentage}%</div>
           </div>
         ))}
       </div>
     ) : (
-      <p className="text-gray-500">עדיין אין מספיק נתונים לזיהוי חוזקות.</p>
+      <p className="text-gray-500 text-sm sm:text-base">עדיין אין מספיק נתונים לזיהוי חוזקות.</p>
     )}
   </div>
 ));
@@ -285,24 +331,24 @@ interface WeaknessesCardProps {
 }
 
 const WeaknessesCard = React.memo<WeaknessesCardProps>(({ topics, hasData }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-    <h3 className="text-lg font-bold text-orange-700 mb-4 flex items-center gap-2">
+  <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
+    <h3 className="text-base sm:text-lg font-bold text-orange-700 mb-4 flex items-center gap-2">
       <AlertCircle size={20} /> נושאים לחיזוק
     </h3>
     {topics.length > 0 ? (
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {topics.map((item, i) => (
-          <div key={i} className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
-            <div>
-              <div className="font-bold text-gray-800">{item.topicOnly}</div>
+          <div key={i} className="flex justify-between items-center p-3 bg-orange-50 rounded-lg min-h-[48px]">
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-gray-800 text-sm sm:text-base truncate">{item.topicOnly}</div>
               <div className="text-xs text-orange-600">{item.subject}</div>
             </div>
-            <div className="text-orange-700 font-bold">{item.percentage}%</div>
+            <div className="text-orange-700 font-bold text-sm sm:text-base mr-2">{item.percentage}%</div>
           </div>
         ))}
       </div>
     ) : (
-      <p className="text-gray-500">
+      <p className="text-gray-500 text-sm sm:text-base">
         {hasData ? "מצוין! אין נושאים חלשים כרגע." : "עדיין אין מספיק נתונים."}
       </p>
     )}
@@ -316,9 +362,12 @@ interface TopicMasteryCardProps {
   mastery: TopicMastery;
   subjectName: string;
   onSelect?: () => void;  // Callback for drill-down to timeline
+  prerequisite?: PrerequisiteRelationship | null;  // Prerequisite info if topic is weak
+  onPrerequisiteClick?: (topic: string) => void;   // Navigation callback
+  cardRef?: (el: HTMLDivElement | null) => void;   // Ref for scroll targeting
 }
 
-const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectName, onSelect }) => {
+const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectName, onSelect, prerequisite, onPrerequisiteClick, cardRef }) => {
   const level = getMasteryLevel(mastery.pKnown);
   const percentage = Math.round(mastery.pKnown * 100);
 
@@ -359,7 +408,8 @@ const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectNa
 
   return (
     <div
-      className={`p-4 rounded-xl border ${config.bg} ${config.border} ${onSelect ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      ref={cardRef}
+      className={`p-3 sm:p-4 rounded-xl border min-h-[48px] ${config.bg} ${config.border} ${onSelect ? 'cursor-pointer hover:shadow-md active:scale-[0.98] transition-all' : 'transition-all'}`}
       onClick={onSelect}
       role={onSelect ? 'button' : undefined}
       tabIndex={onSelect ? 0 : undefined}
@@ -376,7 +426,19 @@ const TopicMasteryCard = React.memo<TopicMasteryCardProps>(({ mastery, subjectNa
       </div>
 
       <h4 className="font-bold text-gray-900 mb-1">{mastery.topic}</h4>
-      <p className="text-xs text-gray-500 mb-3">{subjectName}</p>
+      <p className="text-xs text-gray-500 mb-2">{subjectName}</p>
+
+      {/* Prerequisite badge - shown for weak topics with detected prerequisites */}
+      {prerequisite && (
+        <div className="mb-3">
+          <PrerequisiteBadge
+            prerequisite={prerequisite.prerequisite}
+            rationale={prerequisite.rationale}
+            onClick={onPrerequisiteClick ? () => onPrerequisiteClick(prerequisite.prerequisite) : undefined}
+            compact
+          />
+        </div>
+      )}
 
       {/* Mastery bar */}
       <div className="mb-3">
@@ -465,6 +527,11 @@ interface TopicMasterySectionProps {
   selectedSubject: string;
   selectedTopic: TopicMastery | null;
   setSelectedTopic: (topic: TopicMastery | null) => void;
+  // Phase 7: Prerequisite display
+  getPrerequisiteFor: (topic: string) => PrerequisiteRelationship | null;
+  prerequisitesLoading: boolean;
+  onPrerequisiteClick: (topic: string) => void;
+  topicCardRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
 }
 
 const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
@@ -474,7 +541,11 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
   subjects,
   selectedSubject,
   selectedTopic,
-  setSelectedTopic
+  setSelectedTopic,
+  getPrerequisiteFor,
+  prerequisitesLoading,
+  onPrerequisiteClick,
+  topicCardRefs
 }) => {
   if (profileLoading) {
     return (
@@ -524,8 +595,8 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
     subjects.find(s => s.id === subjectId)?.name || subjectId;
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4">
         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <Brain size={20} className="text-purple-600" /> שליטה בנושאים
         </h3>
@@ -536,18 +607,18 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
         </div>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="text-center p-3 bg-green-50 rounded-lg">
-          <div className="text-2xl font-bold text-green-700">{mastered.length}</div>
+      {/* Summary stats - responsive sizing */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <div className="text-center p-2 sm:p-3 bg-green-50 rounded-lg">
+          <div className="text-xl sm:text-2xl font-bold text-green-700">{mastered.length}</div>
           <div className="text-xs text-green-600">נשלט</div>
         </div>
-        <div className="text-center p-3 bg-blue-50 rounded-lg">
-          <div className="text-2xl font-bold text-blue-700">{learning.length}</div>
+        <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg">
+          <div className="text-xl sm:text-2xl font-bold text-blue-700">{learning.length}</div>
           <div className="text-xs text-blue-600">בלמידה</div>
         </div>
-        <div className="text-center p-3 bg-orange-50 rounded-lg">
-          <div className="text-2xl font-bold text-orange-700">{weak.length}</div>
+        <div className="text-center p-2 sm:p-3 bg-orange-50 rounded-lg">
+          <div className="text-xl sm:text-2xl font-bold text-orange-700">{weak.length}</div>
           <div className="text-xs text-orange-600">לחיזוק</div>
         </div>
       </div>
@@ -560,16 +631,30 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
             <div>
               <h4 className="text-sm font-semibold text-orange-700 mb-2 flex items-center gap-1">
                 <AlertTriangle size={14} /> נושאים לחיזוק
+                {prerequisitesLoading && (
+                  <span className="text-xs font-normal text-gray-400 mr-2">
+                    (מחפש תלויות...)
+                  </span>
+                )}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {weak.map(topic => (
-                  <TopicMasteryCard
-                    key={`${topic.subjectId}-${topic.topic}`}
-                    mastery={topic}
-                    subjectName={getSubjectName(topic.subjectId)}
-                    onSelect={() => setSelectedTopic(topic)}
-                  />
-                ))}
+                {weak.map(topic => {
+                  const cardKey = `${topic.subjectId}-${topic.topic}`;
+                  return (
+                    <TopicMasteryCard
+                      key={cardKey}
+                      mastery={topic}
+                      subjectName={getSubjectName(topic.subjectId)}
+                      onSelect={() => setSelectedTopic(topic)}
+                      prerequisite={getPrerequisiteFor(topic.topic)}
+                      onPrerequisiteClick={onPrerequisiteClick}
+                      cardRef={(el) => {
+                        if (el) topicCardRefs.current.set(cardKey, el);
+                        else topicCardRefs.current.delete(cardKey);
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -581,14 +666,21 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
                 <BookOpen size={14} /> בתהליך למידה
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {learning.map(topic => (
-                  <TopicMasteryCard
-                    key={`${topic.subjectId}-${topic.topic}`}
-                    mastery={topic}
-                    subjectName={getSubjectName(topic.subjectId)}
-                    onSelect={() => setSelectedTopic(topic)}
-                  />
-                ))}
+                {learning.map(topic => {
+                  const cardKey = `${topic.subjectId}-${topic.topic}`;
+                  return (
+                    <TopicMasteryCard
+                      key={cardKey}
+                      mastery={topic}
+                      subjectName={getSubjectName(topic.subjectId)}
+                      onSelect={() => setSelectedTopic(topic)}
+                      cardRef={(el) => {
+                        if (el) topicCardRefs.current.set(cardKey, el);
+                        else topicCardRefs.current.delete(cardKey);
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -600,14 +692,21 @@ const TopicMasterySection = React.memo<TopicMasterySectionProps>(({
                 <CheckCircle size={14} /> נושאים נשלטים
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {mastered.map(topic => (
-                  <TopicMasteryCard
-                    key={`${topic.subjectId}-${topic.topic}`}
-                    mastery={topic}
-                    subjectName={getSubjectName(topic.subjectId)}
-                    onSelect={() => setSelectedTopic(topic)}
-                  />
-                ))}
+                {mastered.map(topic => {
+                  const cardKey = `${topic.subjectId}-${topic.topic}`;
+                  return (
+                    <TopicMasteryCard
+                      key={cardKey}
+                      mastery={topic}
+                      subjectName={getSubjectName(topic.subjectId)}
+                      onSelect={() => setSelectedTopic(topic)}
+                      cardRef={(el) => {
+                        if (el) topicCardRefs.current.set(cardKey, el);
+                        else topicCardRefs.current.delete(cardKey);
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
